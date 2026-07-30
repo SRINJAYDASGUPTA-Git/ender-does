@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="EnderDoesBackendApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <envs>
+      <env name="DB_URL" value="postgresql://localhost:5432/enderdoes" />
+      <env name="DB_USER" value="postgres" />
+      <env name="DB_PASSWORD" value="Acropolis123" />
+      <env name="JWT_SECRET" value="u7YQaw02cIgo/ZibTtUydS8b1InnZZJwwDi779lOMtM=" />
+    </envs>
+    <module name="ender-does-backend" />
+    <option name="PASS_PARENT_ENVS" value="false" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="com.enderdev.enderdoesbackend.EnderDoesBackendApplication" />
+    <option name="VM_PARAMETERS" value="-Djava.io.tmpdir=$TempDir$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
