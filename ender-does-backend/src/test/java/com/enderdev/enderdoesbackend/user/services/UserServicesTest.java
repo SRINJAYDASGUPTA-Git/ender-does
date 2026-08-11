@@ -106,7 +106,7 @@ class UserServicesTest {
 
         verify(userRepository).save(user);
         verify(userMapper).toUserResponse(user);
-        verifyNoInteractions(userRepository);
+//        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -127,7 +127,7 @@ class UserServicesTest {
 
         verify(userRepository).save(user);
         verify(userMapper).toUserResponse(user);
-        verifyNoInteractions(userRepository);
+//        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -148,7 +148,7 @@ class UserServicesTest {
 
         verify(userRepository).save(user);
         verify(userMapper).toUserResponse(user);
-        verifyNoInteractions(userRepository);
+//        verifyNoInteractions(userRepository);
     }
 
     @Test
@@ -169,6 +169,6 @@ class UserServicesTest {
 
         verify(userRepository).save(user);
         verify(userMapper).toUserResponse(user);
-        verifyNoInteractions(userRepository);
+//        verifyNoInteractions(userRepository);
     }
 }

@@ -1,0 +1,68 @@
+pipeline {
+    agent {
+        label 'java-maven-agent'
+    }
+
+    environment {
+        IMAGE_NAME = 'ender-does-backend'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Test') {
+            steps {
+                dir('ender-does-backend') {
+                    sh 'mvn clean test'
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                dir('ender-does-backend') {
+                    sh 'mvn package -DskipTests'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir('ender-does-backend') {
+                    sh '''
+                        docker build \
+                            -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                            -t ${IMAGE_NAME}:latest \
+                            .
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Verify') {
+            steps {
+                sh 'docker image inspect ${IMAGE_NAME}:${IMAGE_TAG}'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Backend pipeline completed successfully!'
+        }
+
+        failure {
+            echo 'Backend pipeline failed.'
+        }
+
+        always {
+            echo "Build #${BUILD_NUMBER} finished with status: ${currentBuild.currentResult}"
+        }
+    }
+}
