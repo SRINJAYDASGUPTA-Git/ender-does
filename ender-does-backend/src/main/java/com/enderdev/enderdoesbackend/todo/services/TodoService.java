@@ -1,6 +1,7 @@
 package com.enderdev.enderdoesbackend.todo.services;
 
 import com.enderdev.enderdoesbackend.exceptions.UnauthorizedAccessException;
+import com.enderdev.enderdoesbackend.exceptions.UnauthorizedException;
 import com.enderdev.enderdoesbackend.todo.dto.TodoRequest;
 import com.enderdev.enderdoesbackend.todo.dto.TodoResponse;
 import com.enderdev.enderdoesbackend.todo.mappers.TodoMapper;
@@ -29,6 +30,7 @@ public class TodoService {
 
     public TodoResponse createTodo(Authentication connectedUser, TodoRequest request) throws BadRequestException {
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
 
         if (request.title().isEmpty() || request.body().isEmpty())
             throw new BadRequestException("Todo must contain a valid Title and Body");
@@ -48,20 +50,21 @@ public class TodoService {
 
     public TodoResponse getTodoById(Authentication connectedUser, UUID id) throws NoSuchElementException, UnauthorizedAccessException{
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
         Todo todo = todoRepository.findById(id).orElseThrow(
                 () -> new NoSuchElementException("Todo with id: "+id+" not found")
         );
-        log.info(String.valueOf(todo.getOwner().equals(user)));
-        log.info(todo.getOwner().getId().toString());
-        log.info(user.getId().toString());
-        if(!todo.getOwner().getId().equals(user.getId()))
-            throw new UnauthorizedAccessException("Cannot access Todo: Unauthorized User");
+//        log.info(String.valueOf(todo.getOwner().equals(user)));
+//        log.info(todo.getOwner().getId().toString());
+//        log.info(user.getId().toString());
+        verifyOwnerShip(todo, user);
 
         return todoMapper.toTodoResponse(todo);
     }
 
     public List<TodoResponse> getAllTodoForUser(Authentication connectedUser){
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
 
         List<Todo> todos = todoRepository.findAllByOwner_Id(user.getId());
 
@@ -70,12 +73,12 @@ public class TodoService {
 
     public TodoResponse completeTodo(Authentication connectedUser, UUID id) throws NoSuchElementException, UnauthorizedAccessException{
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
         Todo todo = todoRepository.findById(id).orElseThrow(
                 () -> new NoSuchElementException("Todo with id: "+id+" not found")
         );
 
-        if(!todo.getOwner().getId().equals(user.getId()))
-            throw new UnauthorizedAccessException("Cannot access Todo: Unauthorized User");
+        verifyOwnerShip(todo, user);
 
         todo.setIsDone(true);
         todo.setCompletedAt(LocalDateTime.now());
@@ -86,12 +89,12 @@ public class TodoService {
 
     public TodoResponse updateTodo(Authentication connectedUser, UUID id, TodoRequest request) throws NoSuchElementException, UnauthorizedAccessException{
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
         Todo todo = todoRepository.findById(id).orElseThrow(
                 () -> new NoSuchElementException("Todo with id: "+id+" not found")
         );
 
-        if(!todo.getOwner().getId().equals(user.getId()))
-            throw new UnauthorizedAccessException("Cannot access Todo: Unauthorized User");
+        verifyOwnerShip(todo, user);
 
         if(!request.title().isEmpty()){
             todo.setTitle(request.title());
@@ -105,16 +108,25 @@ public class TodoService {
 
     public void deleteTodo(Authentication connectedUser, UUID id) throws NoSuchElementException, UnauthorizedAccessException{
         User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
         Todo todo = todoRepository.findById(id).orElseThrow(
                 () -> new NoSuchElementException("Todo with id: "+id+" not found")
         );
 
-        if(!todo.getOwner().getId().equals(user.getId()))
-            throw new UnauthorizedAccessException("Cannot access Todo: Unauthorized User");
-        log.info("Deleting Todo: "+todo.getId());
+        verifyOwnerShip(todo, user);
         todoRepository.deleteTodoById(todo.getId());
         todoRepository.flush();
 
-        log.info("Deleted");
+//        log.info("Deleted");
+    }
+
+    private static void verifyOwnerShip(Todo todo, User user) {
+        if(!todo.getOwner().getId().equals(user.getId()))
+            throw new UnauthorizedAccessException("Cannot access Todo: Unauthorized User");
+    }
+
+    private static void verifyAuthentication(User user) {
+        if (user == null)
+            throw new UnauthorizedException("User not Authorized");
     }
 }

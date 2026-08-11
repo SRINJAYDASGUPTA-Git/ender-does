@@ -1,5 +1,6 @@
 package com.enderdev.enderdoesbackend.user.services;
 
+import com.enderdev.enderdoesbackend.exceptions.UnauthorizedAccessException;
 import com.enderdev.enderdoesbackend.user.dto.UserResponse;
 import com.enderdev.enderdoesbackend.user.dto.UserUpdateRequest;
 import com.enderdev.enderdoesbackend.user.mappers.UserMapper;
@@ -22,18 +23,13 @@ public class UserServices {
 
     @Transactional
     public UserResponse getCurrentUser(Authentication connectedUser) {
-        User principal = (User) connectedUser.getPrincipal();
-        User user = userRepository.findByEmail(principal.getEmail())
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
-        UserResponse response = userMapper.toUserResponse(user);
-        log.info(response.toString());
-        return response;
+        User user = (User) connectedUser.getPrincipal();
+        //        log.info(response.toString());
+        return userMapper.toUserResponse(user);
     }
 
     public UserResponse updateCurrentUser(Authentication connectedUser, UserUpdateRequest request) {
-        User principal = (User) connectedUser.getPrincipal();
-        User user = userRepository.findByEmail(principal.getEmail())
-                .orElseThrow(() -> new NoSuchElementException("User not found"));
+        User user = (User) connectedUser.getPrincipal();
         if (request.name() != null) {
             user.setName(request.name());
         }

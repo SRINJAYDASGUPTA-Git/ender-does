@@ -14,6 +14,7 @@ public class TodoMapper {
                 .title(todo.getTitle())
                 .ownerId(todo.getOwner().getId())
                 .body(todo.getBody())
+                .isDone(todo.getIsDone())
                 .completedAt(todo.getCompletedAt() != null ? todo.getCompletedAt().toString() : "")
                 .createdAt(todo.getCreatedAt().toString())
                 .build();

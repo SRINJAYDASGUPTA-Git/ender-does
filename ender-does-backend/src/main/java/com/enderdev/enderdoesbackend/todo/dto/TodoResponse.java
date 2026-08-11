@@ -14,6 +14,7 @@ import java.util.UUID;
 public class TodoResponse {
     private String createdAt;
     private String completedAt;
+    private boolean isDone;
     private String title;
     private String body;
     private UUID ownerId;
