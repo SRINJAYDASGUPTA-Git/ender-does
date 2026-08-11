@@ -10,6 +10,7 @@ pipeline {
 
         DOCKER_IMAGE = 'srinjay2004/ender-does-backend'
         DEPLOY_DIR   = '/srv/ender-does'
+        DEPLOY_HOST  = '172.17.0.1'
 
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
@@ -87,7 +88,7 @@ pipeline {
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
                             -o ConnectTimeout=5 \
-                            "$SSH_USER@172.17.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "whoami && hostname"
                     '''
                 }
@@ -137,17 +138,17 @@ pipeline {
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "mkdir -p ${DEPLOY_DIR}"
 
                         scp -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
                             backend/docker-compose.yml \
-                            "$SSH_USER@127.0.0.1:${DEPLOY_DIR}/docker-compose.yml"
+                            "$SSH_USER@${DEPLOY_HOST}:${DEPLOY_DIR}/docker-compose.yml"
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "cat > ${DEPLOY_DIR}/.env" <<EOF
 IMAGE_TAG=${IMAGE_TAG}
 DB_URL=${DB_URL}
@@ -158,7 +159,7 @@ EOF
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "export PGPASSWORD='$POSTGRES_ADMIN_PASSWORD' && \
                              docker exec -e PGPASSWORD=\\\"\\\$PGPASSWORD\\\" postgres \
                              psql -U '$POSTGRES_ADMIN_USER' -d postgres \
@@ -170,7 +171,7 @@ EOF
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "export PGPASSWORD='$POSTGRES_ADMIN_PASSWORD' && \
                              docker exec -e PGPASSWORD=\\\"\\\$PGPASSWORD\\\" postgres \
                              psql -U '$POSTGRES_ADMIN_USER' -d postgres \
@@ -187,20 +188,20 @@ EOF
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "docker network inspect apps >/dev/null 2>&1 ||
                              docker network create apps"
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "cd ${DEPLOY_DIR} &&
                              docker compose pull &&
                              docker compose up -d --remove-orphans"
 
                         ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            "$SSH_USER@127.0.0.1" \
+                            "$SSH_USER@${DEPLOY_HOST}" \
                             "docker image prune -f"
                     '''
                 }
