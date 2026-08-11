@@ -143,7 +143,7 @@ pipeline {
 
                         scp -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
-                            backend/docker-compose.yml \
+                            ender-does-backend/docker-compose.yml \
                             "$SSH_USER@${DEPLOY_HOST}:${DEPLOY_DIR}/docker-compose.yml"
 
                         ssh -i "$SSH_KEY" \
