@@ -4,7 +4,13 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = 'ender-does-backend'
+        PROJECT_NAME = 'ender-does'
+        DB_NAME     = 'enderdoes'
+        DB_APP_USER = 'enderdoes_app'
+
+        DOCKER_IMAGE = 'srinjay2004/ender-does-backend'
+        DEPLOY_DIR   = '/srv/ender-does'
+
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -18,7 +24,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                dir('ender-does-backend') {
+                dir('backend') {
                     sh 'mvn clean test'
                 }
             }
@@ -26,7 +32,7 @@ pipeline {
 
         stage('Package') {
             steps {
-                dir('ender-does-backend') {
+                dir('backend') {
                     sh 'mvn package -DskipTests'
                 }
             }
@@ -34,35 +40,161 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                dir('ender-does-backend') {
+                dir('backend') {
                     sh '''
                         docker build \
-                            -t ${IMAGE_NAME}:${IMAGE_TAG} \
-                            -t ${IMAGE_NAME}:latest \
+                            -t ${DOCKER_IMAGE}:${IMAGE_TAG} \
+                            -t ${DOCKER_IMAGE}:latest \
                             .
                     '''
                 }
             }
         }
 
-        stage('Docker Verify') {
+        stage('Push Docker Image') {
             steps {
-                sh 'docker image inspect ${IMAGE_NAME}:${IMAGE_TAG}'
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            -u "$DOCKER_USER" \
+                            --password-stdin
+
+                        docker push ${DOCKER_IMAGE}:${IMAGE_TAG}
+                        docker push ${DOCKER_IMAGE}:latest
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'deployment-user-ssh-creds',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    ),
+
+                    string(
+                        credentialsId: 'enderdoes-db-url',
+                        variable: 'DB_URL'
+                    ),
+
+                    string(
+                        credentialsId: 'enderdoes-db-user',
+                        variable: 'DB_USER'
+                    ),
+
+                    string(
+                        credentialsId: 'enderdoes-db-password',
+                        variable: 'DB_PASSWORD'
+                    ),
+
+                    string(
+                        credentialsId: 'enderdoes-jwt-secret',
+                        variable: 'JWT_SECRET'
+                    ),
+
+                    usernamePassword(
+                        credentialsId: 'postgres-admin-credentials',
+                        usernameVariable: 'POSTGRES_ADMIN_USER',
+                        passwordVariable: 'POSTGRES_ADMIN_PASSWORD'
+                    )
+                ]) {
+
+                    sh '''
+                        set +x
+
+                        echo "Deploying ${PROJECT_NAME} build ${IMAGE_TAG}"
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "mkdir -p ${DEPLOY_DIR}"
+
+                        scp -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            backend/docker-compose.yml \
+                            "$SSH_USER@ssh.srinjaydg.in:${DEPLOY_DIR}/docker-compose.yml"
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "cat > ${DEPLOY_DIR}/.env" <<EOF
+IMAGE_TAG=${IMAGE_TAG}
+DB_URL=${DB_URL}
+DB_USER=${DB_USER}
+DB_PASSWORD=${DB_PASSWORD}
+JWT_SECRET=${JWT_SECRET}
+EOF
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "export PGPASSWORD='$POSTGRES_ADMIN_PASSWORD' && \
+                             docker exec -e PGPASSWORD=\\\"\\\$PGPASSWORD\\\" postgres \
+                             psql -U '$POSTGRES_ADMIN_USER' -d postgres \
+                             -tc \\\"SELECT 1 FROM pg_database WHERE datname = '${DB_NAME}'\\\" |
+                             grep -q 1 ||
+                             docker exec -e PGPASSWORD=\\\"\\\$PGPASSWORD\\\" postgres \
+                             psql -U '$POSTGRES_ADMIN_USER' -d postgres \
+                             -c \\\"CREATE DATABASE ${DB_NAME}\\\""
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "export PGPASSWORD='$POSTGRES_ADMIN_PASSWORD' && \
+                             docker exec -e PGPASSWORD=\\\"\\\$PGPASSWORD\\\" postgres \
+                             psql -U '$POSTGRES_ADMIN_USER' -d postgres \
+                             -c \\\"DO \\\\\\\$\\\\\\$ BEGIN
+                             IF NOT EXISTS (
+                                 SELECT FROM pg_roles
+                                 WHERE rolname = '${DB_USER}'
+                             ) THEN
+                                 CREATE ROLE ${DB_USER} LOGIN PASSWORD '${DB_PASSWORD}';
+                             ELSE
+                                 ALTER ROLE ${DB_USER} WITH LOGIN PASSWORD '${DB_PASSWORD}';
+                             END IF;
+                             END \\\\\\\$\\\\\\$;\\\""
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "docker network inspect apps >/dev/null 2>&1 ||
+                             docker network create apps"
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "cd ${DEPLOY_DIR} &&
+                             docker compose pull &&
+                             docker compose up -d --remove-orphans"
+
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@ssh.srinjaydg.in" \
+                            "docker image prune -f"
+                    '''
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Backend pipeline completed successfully!'
+            echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
         }
 
         failure {
-            echo 'Backend pipeline failed.'
-        }
-
-        always {
-            echo "Build #${BUILD_NUMBER} finished with status: ${currentBuild.currentResult}"
+            echo "Pipeline failed."
         }
     }
 }
