@@ -1,0 +1,19 @@
+services:
+  backend:
+    image: ender-does-backend:latest
+    container_name: ender-does-backend
+
+    env_file:
+      - .env
+
+    ports:
+      - "8080:8080"
+
+    restart: unless-stopped
+
+    networks:
+      - apps
+
+networks:
+  apps:
+    external: true
