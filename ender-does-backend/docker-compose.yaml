@@ -1,6 +1,6 @@
 services:
   backend:
-    image: ender-does-backend:latest
+    image: srinjay2004/ender-does-backend:latest
     container_name: ender-does-backend
 
     env_file:
