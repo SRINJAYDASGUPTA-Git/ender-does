@@ -241,8 +241,7 @@ EOF
             echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
 
             emailext(
-                to: 'dasguptasrinjay2004@gmail.com',
-                cc: 'moitreyoghosh004@gmail.com',
+                to: 'dasguptasrinjay2004@gmail.com, moitreyoghosh004@gmail.com',
                 subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """
@@ -336,8 +335,7 @@ EOF
             echo "Pipeline failed."
 
             emailext(
-                to: 'dasguptasrinjay2004@gmail.com',
-                cc: 'moitreyoghosh004@gmail.com',
+                to: 'dasguptasrinjay2004@gmail.com, moitreyoghosh004@gmail.com',
                 subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """
