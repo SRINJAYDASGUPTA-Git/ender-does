@@ -74,26 +74,26 @@ pipeline {
                 }
             }
         }
-        stage('Test Deployment SSH') {
-            steps {
-                withCredentials([
-                        sshUserPrivateKey(
-                            credentialsId: 'deployment-user-ssh-creds',
-                            keyFileVariable: 'SSH_KEY',
-                            usernameVariable: 'SSH_USER'
-                        )
-                    ]) {
-                    sh '''
-                        set -x
-                        ssh -i "$SSH_KEY" \
-                            -o StrictHostKeyChecking=no \
-                            -o ConnectTimeout=5 \
-                            "$SSH_USER@${DEPLOY_HOST}" \
-                            "whoami && hostname"
-                    '''
-                }
-            }
-        }
+//        stage('Test Deployment SSH') {
+//            steps {
+//                withCredentials([
+//                        sshUserPrivateKey(
+//                            credentialsId: 'deployment-user-ssh-creds',
+//                            keyFileVariable: 'SSH_KEY',
+//                            usernameVariable: 'SSH_USER'
+//                        )
+//                    ]) {
+//                    sh '''
+//                        set -x
+//                        ssh -i "$SSH_KEY" \
+//                            -o StrictHostKeyChecking=no \
+//                            -o ConnectTimeout=5 \
+//                            "$SSH_USER@${DEPLOY_HOST}" \
+//                            "whoami && hostname"
+//                    '''
+//                }
+//            }
+//        }
 
         stage('Deploy') {
             steps {
@@ -242,6 +242,7 @@ EOF
 
             emailext(
                 to: 'dasguptasrinjay2004@gmail.com',
+                cc: 'moitreyoghosh004@gmail.com',
                 subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """
@@ -336,6 +337,7 @@ EOF
 
             emailext(
                 to: 'dasguptasrinjay2004@gmail.com',
+                cc: 'moitreyoghosh004@gmail.com',
                 subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
                 mimeType: 'text/html',
                 body: """
