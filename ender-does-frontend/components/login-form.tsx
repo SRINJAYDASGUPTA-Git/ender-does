@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import {useState} from "react";
+import {cn} from "@/lib/utils";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { validateCredentials } from "@/app/actions/auth";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import MFADialog from "./security/mfa-dialog";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Field, FieldGroup, FieldLabel,} from "@/components/ui/field";
+import {useRouter} from "next/navigation";
+import axios from "@/utils/axiosInstance"
+import {Eye, EyeOff} from "lucide-react";
 
 type LoginFormProps = {
   className?: string;
@@ -27,9 +22,8 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [openMfaDialog, setOpenMfaDialog] = useState(false);
-  const [userId, setUserId] = useState("");
   const router = useRouter();
 
   async function handleSubmit(
@@ -40,53 +34,24 @@ export function LoginForm({
     setLoading(true);
     setError("");
 
-    const result = await validateCredentials(
-      email,
-      password
-    );
-
-    console.log(result)
-
-    if (!result.success) {
-      setError(result.message);
-      setLoading(false);
-      return;
-    }
-
-    // MFA Enabled
-    if (result.requiresMfa) {
-      setUserId(result.userId);
-      setOpenMfaDialog(true);
-      setLoading(false);
-      return;
-    }
-
-    // No MFA
-    const signInResult = await signIn("credentials", {
+    const result = await axios.post("/auth/login", {
       email,
       password,
-      redirect: false,
     });
 
-    if (!signInResult?.ok) {
-      setError("Unable to sign in.");
+    console.log(result)
+    if (result.status !== 200) {
+      setError(result.data.message || "Something went wrong");
       setLoading(false);
       return;
     }
 
-    router.push("/");
+    window.location.href = '/';
   }
 
 
   return (
     <>
-      <MFADialog
-        open={openMfaDialog}
-        onOpenChange={setOpenMfaDialog}
-        email={email}
-        password={password}
-        userId={userId}
-      />
       <form
         onSubmit={handleSubmit}
         className={cn(
@@ -129,16 +94,30 @@ export function LoginForm({
               Password
             </FieldLabel>
 
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-            />
+            <div className="relative">
+              <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+              />
+
+              <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                    <EyeOff className="size-4"/>
+                ) : (
+                    <Eye className="size-4"/>
+                )}
+              </button>
+            </div>
           </Field>
 
           {error && (
@@ -148,20 +127,22 @@ export function LoginForm({
           )}
 
           <Button
-            type="submit"
-            disabled={loading}
-            className="w-full"
+              type="submit"
+              disabled={loading}
+              className="w-full"
           >
-            {loading
-              ? "Signing in..."
-              : "Sign In"}
+            {loading ? "Signing in..." : "Sign In"}
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
-            Protected by Email + Password.
-            <br />
-            Two-Factor Authentication will be
-            requested if enabled.
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <button
+                type="button"
+                onClick={() => router.push("/register")}
+                className="font-medium text-foreground hover:underline"
+            >
+              Register
+            </button>
           </p>
         </FieldGroup>
       </form>

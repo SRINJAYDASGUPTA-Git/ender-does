@@ -1,10 +1,16 @@
-"use client"
+"use client";
 
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+  CheckCircle2Icon,
+  ChevronRightIcon,
+  CircleIcon,
+  LayoutDashboardIcon,
+  ListTodoIcon,
+  SettingsIcon,
+} from "lucide-react";
+
+import {Collapsible, CollapsibleContent, CollapsibleTrigger,} from "@/components/ui/collapsible";
+
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -14,68 +20,84 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
-import { ChevronRightIcon, LayoutDashboardIcon } from "lucide-react"
+} from "@/components/ui/sidebar";
+import Link from "next/link";
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    icon?: React.ReactNode
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-      icon?: React.ReactNode
-    }[]
-  }[]
-}) {
+export function NavMain() {
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton asChild>
-            <a href="/">
-              <LayoutDashboardIcon />
-              <span>Overview</span>
-            </a>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        {items.map((item) => (
+      <SidebarGroup>
+        <SidebarGroupLabel>
+          EnderDoes
+        </SidebarGroupLabel>
+
+        <SidebarMenu>
+          {/* Overview */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Overview">
+              <Link href="/">
+                <LayoutDashboardIcon />
+                <span>Overview</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+
+          {/* Tasks */}
           <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={item.isActive}
-            className="group/collapsible"
+              defaultOpen
+              className="group/collapsible"
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip={item.title}>
-                  {item.icon}
-                  <span>{item.title}</span>
+                <SidebarMenuButton tooltip="Tasks">
+                  <ListTodoIcon />
+                  <span>Tasks</span>
+
                   <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </SidebarMenuButton>
               </CollapsibleTrigger>
+
               <CollapsibleContent>
                 <SidebarMenuSub>
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuSubItem key={subItem.title}>
-                      <SidebarMenuSubButton asChild>
-                        <a href={subItem.url}>
-                          {subItem.icon}
-                          <span>{subItem.title}</span>
-                        </a>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <a href="/todos">
+                        <ListTodoIcon />
+                        <span>All Tasks</span>
+                      </a>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <a href="/todos?view=active">
+                        <CircleIcon />
+                        <span>Active</span>
+                      </a>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild>
+                      <a href="/todos?view=completed">
+                        <CheckCircle2Icon />
+                        <span>Completed</span>
+                      </a>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </CollapsibleContent>
             </SidebarMenuItem>
           </Collapsible>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  )
+          {/* Settings */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Settings">
+              <a href="/settings">
+                <SettingsIcon />
+                <span>Settings</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarGroup>
+  );
 }

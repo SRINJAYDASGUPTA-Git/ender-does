@@ -1,127 +1,80 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 
-import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
-import { TeamSwitcher } from "@/components/team-switcher"
-import { FaUbuntu } from "react-icons/fa";
+import {NavMain} from "@/components/nav-main"
+import {NavUser} from "@/components/nav-user"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
 } from "@/components/ui/sidebar"
-import {ActivityIcon, RocketIcon, ServerIcon } from "lucide-react"
+import {CheckSquare2Icon} from "lucide-react"
+import {useUser} from "@/providers/UserContext";
+import {toast} from "@/components/ui/toast"
+import {useRouter} from "next/navigation";
+import Link from "next/link";
 
-// This is sample data.
-const data = {
-  user: {
-    name: "srinjay",
-    email: "dasguptasrinjay2004@gmail.com",
-    avatar: "https://avatars.githubusercontent.com/u/70833470?s=96&v=4",
-  },
-  teams: [
-  {
-    name: "homelab",
-    logo: (
-      <FaUbuntu />
-    ),
-    plan: "Ubuntu 24.04 LTS",
-  },
-],
-  navMain: [
-  {
-    title: "Services",
-    icon: <ServerIcon />,
-    items: [
-      {
-    title: "EnderTest",
-    url: "/services/endertest",
-    icon: (
-      <Image
-        src="/apps/endertest.svg"
-        alt="EnderTest"
-        width={16}
-        height={16}
-        className="rounded-sm"
-      />
-    ),
-  },
+export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+    const {user, loading} = useUser()
+    const router = useRouter();
 
-  {
-    title: "EndrLink",
-    url: "/services/endrlink",
-    icon: (
-      <Image
-        src="/apps/endrlink.png"
-        alt="EndrLink"
-        width={16}
-        height={16}
-        className="rounded-sm"
-      />
-    ),
-  },
-  
-  {
-    title: "EnderBrary",
-    url: "/services/enderbrary",
-    icon: (
-      <Image
-        src="/apps/enderbrary.png"
-        alt="EnderBrary"
-        width={16}
-        height={16}
-        className="rounded-sm"
-      />
-    ),
-  },
-    ],
-  },
+    if (loading) {
+        return (
+            <></>
+        )
+    }
 
-  {
-    title: "Deployments",
-    icon: <RocketIcon />,
-    items: [
-      {
-        title: "Recent Deployments",
-        url: "/deployments",
-      },
-    ],
-  },
+    if (!user) {
+        toast.add({
+            type: "error",
+            description: "Not logged in",
+            priority: "high",
+        })
+        router.push("/login")
+    }
+    return (
+        <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="cursor-default hover:bg-transparent"
+                        >
+                            <Link href="/" className="flex items-center justify-between w-[65%]">
+                                <div
+                                    className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                    <CheckSquare2Icon className="size-4"/>
+                                </div>
 
-  {
-    title: "Monitoring",
-    icon: <ActivityIcon />,
-    items: [
-      {
-        title: "System Metrics",
-        url: "/monitoring",
-      },
-      {
-        title: "Logs",
-        url: "/logs",
-      },
-    ],
-  },
-],
-}
+                                <div className="flex flex-col text-left text-sm leading-tight">
+                                <span className="truncate font-semibold">
+                                    EnderDoes
+                                </span>
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  )
+                                    <span className="truncate text-xs text-muted-foreground">
+                                    Get things done.
+                                </span>
+                                </div>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+
+                <NavMain/>
+            </SidebarContent>
+            <SidebarFooter>
+                <NavUser user={user!}/>
+            </SidebarFooter>
+            <SidebarRail/>
+        </Sidebar>
+    )
 }
