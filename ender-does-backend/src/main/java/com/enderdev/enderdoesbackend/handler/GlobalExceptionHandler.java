@@ -9,58 +9,84 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private ResponseEntity<Map<String, String>> response(
+            HttpStatus status,
+            String message
+    ) {
+        return ResponseEntity
+                .status(status)
+                .body(Map.of("message", message));
+    }
+
     @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<String> handleNoSuchElementException(NoSuchElementException e) {
-
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(Exception e) {
-
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException e) {
-
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    @ExceptionHandler(Throwable.class)
-    public ResponseEntity<String> handleThrowable(Throwable ex) {
-
-        return ResponseEntity.internalServerError().body("Something went wrong.");
+    public ResponseEntity<Map<String, String>> handleNoSuchElementException(
+            NoSuchElementException e
+    ) {
+        return response(HttpStatus.NOT_FOUND, e.getMessage());
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<String> handleBadRequestException(BadRequestException e) {
-
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleBadRequestException(
+            BadRequestException e
+    ) {
+        return response(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(ExistingEmailConflictException.class)
-    public ResponseEntity<String> handleExistingEmailConflictException(ExistingEmailConflictException e) {
-
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<Map<String, String>> handleExistingEmailConflictException(
+            ExistingEmailConflictException e
+    ) {
+        return response(HttpStatus.CONFLICT, e.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedAccessException.class)
-    public ResponseEntity<String> handleUnauthorizedAccessException(UnauthorizedAccessException e){
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.FORBIDDEN);
+    public ResponseEntity<Map<String, String>> handleUnauthorizedAccessException(
+            UnauthorizedAccessException e
+    ) {
+        return response(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<String> handleUnauthorizedException(UnauthorizedAccessException e){
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<Map<String, String>> handleUnauthorizedException(
+            UnauthorizedException e
+    ) {
+        return response(HttpStatus.UNAUTHORIZED, e.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException e){
-        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(
+            IllegalArgumentException e
+    ) {
+        return response(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(
+            RuntimeException e
+    ) {
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, String>> handleException(
+            Exception e
+    ) {
+        return response(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+    }
+
+    @ExceptionHandler(Throwable.class)
+    public ResponseEntity<Map<String, String>> handleThrowable(
+            Throwable e
+    ) {
+        return response(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong."
+        );
     }
 }

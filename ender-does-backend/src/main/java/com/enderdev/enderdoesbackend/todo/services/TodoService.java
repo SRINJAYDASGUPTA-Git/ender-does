@@ -129,4 +129,20 @@ public class TodoService {
         if (user == null)
             throw new UnauthorizedException("User not Authorized");
     }
+
+    public TodoResponse reopenTodo(Authentication connectedUser, UUID id) {
+        User user = (User) connectedUser.getPrincipal();
+        verifyAuthentication(user);
+        Todo todo = todoRepository.findById(id).orElseThrow(
+                () -> new NoSuchElementException("Todo with id: "+id+" not found")
+        );
+
+        verifyOwnerShip(todo, user);
+
+        todo.setIsDone(false);
+        todo.setCompletedAt(null);
+        todoRepository.save(todo);
+
+        return todoMapper.toTodoResponse(todo);
+    }
 }

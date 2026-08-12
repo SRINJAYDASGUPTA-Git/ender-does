@@ -26,12 +26,12 @@ public class TodoController {
     public ResponseEntity<TodoResponse> getTodoById(
             @PathVariable(name = "id") UUID id,
             Authentication connectedUser
-    ){
+    ) {
         return ResponseEntity.ok(todoService.getTodoById(connectedUser, id));
     }
 
     @GetMapping("/")
-    public ResponseEntity<List<TodoResponse>> getAllTodosByUser(Authentication connectedUser){
+    public ResponseEntity<List<TodoResponse>> getAllTodosByUser(Authentication connectedUser) {
         return ResponseEntity.ok(todoService.getAllTodoForUser(connectedUser));
     }
 
@@ -48,7 +48,7 @@ public class TodoController {
             @PathVariable(name = "id") UUID id,
             @RequestBody TodoRequest request,
             Authentication connectedUser
-    ){
+    ) {
         return ResponseEntity.ok(todoService.updateTodo(connectedUser, id, request));
     }
 
@@ -56,16 +56,26 @@ public class TodoController {
     public ResponseEntity<TodoResponse> completeTodo(
             @PathVariable(name = "id") UUID id,
             Authentication connectedUser
-    ){
+    ) {
         return ResponseEntity.ok(todoService.completeTodo(connectedUser, id));
+    }
+
+    @PatchMapping("/{id}/reopen")
+    public ResponseEntity<TodoResponse> reopenTodo(
+            @PathVariable(name = "id") UUID id,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(
+                todoService.reopenTodo(connectedUser, id)
+        );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTodo(
             @PathVariable(name = "id") UUID id,
             Authentication connectedUser
-    ){
-        todoService.deleteTodo(connectedUser,id);
+    ) {
+        todoService.deleteTodo(connectedUser, id);
 
         return ResponseEntity.ok().build();
     }
