@@ -55,12 +55,12 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    )
-                ]) {
+                        usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )
+                    ]) {
                     sh '''
                         echo "$DOCKER_PASSWORD" | docker login \
                             -u "$DOCKER_USER" \
@@ -77,12 +77,12 @@ pipeline {
         stage('Test Deployment SSH') {
             steps {
                 withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'deployment-user-ssh-creds',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                    )
-                ]) {
+                        sshUserPrivateKey(
+                            credentialsId: 'deployment-user-ssh-creds',
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USER'
+                        )
+                    ]) {
                     sh '''
                         set -x
                         ssh -i "$SSH_KEY" \
@@ -98,44 +98,44 @@ pipeline {
         stage('Deploy') {
             steps {
                 withCredentials([
-                    sshUserPrivateKey(
-                        credentialsId: 'deployment-user-ssh-creds',
-                        keyFileVariable: 'SSH_KEY',
-                        usernameVariable: 'SSH_USER'
-                    ),
+                        sshUserPrivateKey(
+                            credentialsId: 'deployment-user-ssh-creds',
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USER'
+                        ),
 
-                    usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASSWORD'
-                    ),
+                        usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        ),
 
-                    string(
-                        credentialsId: 'enderdoes-db-url',
-                        variable: 'DB_URL'
-                    ),
+                        string(
+                            credentialsId: 'enderdoes-db-url',
+                            variable: 'DB_URL'
+                        ),
 
-                    string(
-                        credentialsId: 'enderdoes-db-user',
-                        variable: 'DB_USER'
-                    ),
+                        string(
+                            credentialsId: 'enderdoes-db-user',
+                            variable: 'DB_USER'
+                        ),
 
-                    string(
-                        credentialsId: 'enderdoes-db-password',
-                        variable: 'DB_PASSWORD'
-                    ),
+                        string(
+                            credentialsId: 'enderdoes-db-password',
+                            variable: 'DB_PASSWORD'
+                        ),
 
-                    string(
-                        credentialsId: 'enderdoes-jwt-secret',
-                        variable: 'JWT_SECRET'
-                    ),
+                        string(
+                            credentialsId: 'enderdoes-jwt-secret',
+                            variable: 'JWT_SECRET'
+                        ),
 
-                    usernamePassword(
-                        credentialsId: 'postgres-admin-credentials',
-                        usernameVariable: 'POSTGRES_ADMIN_USER',
-                        passwordVariable: 'POSTGRES_ADMIN_PASSWORD'
-                    )
-                ]) {
+                        usernamePassword(
+                            credentialsId: 'postgres-admin-credentials',
+                            usernameVariable: 'POSTGRES_ADMIN_USER',
+                            passwordVariable: 'POSTGRES_ADMIN_PASSWORD'
+                        )
+                    ]) {
 
                     sh '''
                         set +x
@@ -213,17 +213,38 @@ EOF
                 }
             }
         }
+
+        stage('Configure Subdomain') {
+            steps {
+                withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'deployment-user-ssh-creds',
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USER'
+                        )
+                    ]) {
+                    sh '''
+                set +x
+
+                ssh -i "$SSH_KEY" \
+                    -o StrictHostKeyChecking=no \
+                    "$SSH_USER@${DEPLOY_HOST}" \
+                    "sudo -n /usr/local/bin/deploy-subdomain enderdoes 8081"
+            '''
+                }
+            }
+        }
     }
 
     post {
-    success {
-        echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+        success {
+            echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
 
-        emailext(
-            to: 'dasguptasrinjay2004@gmail.com',
-            subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
-            mimeType: 'text/html',
-            body: """
+            emailext(
+                to: 'dasguptasrinjay2004@gmail.com',
+                subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
                 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
 
                     <div style="
@@ -307,17 +328,17 @@ EOF
 
                 </div>
             """
-        )
-    }
+            )
+        }
 
-    failure {
-        echo "Pipeline failed."
+        failure {
+            echo "Pipeline failed."
 
-        emailext(
-            to: 'dasguptasrinjay2004@gmail.com',
-            subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
-            mimeType: 'text/html',
-            body: """
+            emailext(
+                to: 'dasguptasrinjay2004@gmail.com',
+                subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
                 <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
 
                     <div style="
@@ -380,7 +401,7 @@ EOF
 
                 </div>
             """
-        )
+            )
+        }
     }
-}
 }
