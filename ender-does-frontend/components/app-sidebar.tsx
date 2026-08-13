@@ -47,7 +47,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             size="lg"
                             className="cursor-default hover:bg-transparent"
                         >
-                            <Link href="/" className="flex items-center justify-between w-[65%]">
+                            <Link href="/dashboard" className="flex items-center justify-between w-[65%]">
                                 <div
                                     className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                     <CheckSquare2Icon className="size-4"/>

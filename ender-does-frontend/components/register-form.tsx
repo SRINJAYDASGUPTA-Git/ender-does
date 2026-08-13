@@ -65,7 +65,7 @@ export function RegisterForm({
                 return;
             }
 
-            router.push("/login");
+            router.push("/dashboard");
         } catch (err: any) {
             setError(
                 err.response?.data?.message ||

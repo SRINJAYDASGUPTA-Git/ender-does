@@ -60,7 +60,7 @@ Given(
             })
             .click();
 
-        await this.page.waitForURL("**/");
+        await this.page.waitForURL("**/dashboard");
     }
 );
 
@@ -240,7 +240,7 @@ Given(
 
 
 // ======================================================
-// Completed Todo
+// Completed To do
 // ======================================================
 
 Given(
