@@ -1,28 +1,141 @@
 import {
     Before,
+    BeforeAll,
     After,
+    AfterAll,
     setDefaultTimeout,
 } from "@cucumber/cucumber";
-import { chromium } from "playwright";
+
+import { chromium, Browser, Page } from "playwright";
+import { expect } from "@playwright/test";
+
 import { CustomWorld } from "./world";
 
 const BASE_URL =
     process.env.BASE_URL ?? "http://localhost:3000";
+
 setDefaultTimeout(30000);
 
-Before(async function (this: CustomWorld) {
-    this.browser = await chromium.launch({
+let browser: Browser;
+
+const TEST_EMAIL =
+    process.env.TEST_USER_EMAIL ??
+    "test@example.com";
+
+const TEST_PASSWORD =
+    process.env.TEST_USER_PASSWORD ??
+    "password";
+async function purgeAllTodos(page: Page) {
+    console.log("🧹 Starting final Todo purge...");
+
+    await page.goto("/login");
+
+    await page
+        .getByTestId("login-email")
+        .fill(TEST_EMAIL);
+
+    await page
+        .getByTestId("login-password")
+        .fill(TEST_PASSWORD);
+
+    await page
+        .getByTestId("login-submit")
+        .click();
+
+    await page.waitForURL("**/dashboard", {
+        timeout: 10000,
+    });
+
+    console.log("🧹 Authenticated for purge");
+
+    const todos = await page.evaluate(async () => {
+        const response = await fetch("/api/todos/");
+
+        if (!response.ok) {
+            throw new Error(
+                `Failed to fetch todos: ${response.status}`
+            );
+        }
+
+        return response.json();
+    });
+
+    console.log(
+        `🧹 Found ${todos.length} todos`
+    );
+
+    for (const todo of todos) {
+        const response = await page.evaluate(
+            async (id) => {
+                const result = await fetch(
+                    `/api/todos/${id}`,
+                    {
+                        method: "DELETE",
+                    }
+                );
+
+                return {
+                    status: result.status,
+                    ok: result.ok,
+                };
+            },
+            todo.id
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `Failed to delete todo ${todo.id}: ${response.status}`
+            );
+        }
+    }
+
+    console.log(
+        `🧹 Deleted ${todos.length} todos`
+    );
+}
+
+BeforeAll(async function () {
+    browser = await chromium.launch({
         headless: true,
     });
+});
 
-    this.context = await this.browser.newContext({
-        baseURL: BASE_URL,
-    });
+Before(async function (this: CustomWorld) {
+    this.browser = browser;
 
-    this.page = await this.context.newPage();
+    this.context =
+        await browser.newContext({
+            baseURL: BASE_URL,
+        });
+
+    this.page =
+        await this.context.newPage();
 });
 
 After(async function (this: CustomWorld) {
     await this.context?.close();
-    await this.browser?.close();
+});
+
+AfterAll(async function () {
+    console.log("🧹 Running final Todo purge...");
+
+    const context = await browser.newContext({
+        baseURL: BASE_URL,
+    });
+
+    const page = await context.newPage();
+
+    try {
+        await purgeAllTodos(page);
+    } catch (error) {
+        console.error(
+            "❌ Final Todo purge failed:",
+            error
+        );
+    } finally {
+        await context.close();
+        await browser.close();
+
+        console.log("🧹 Browser closed.");
+    }
 });

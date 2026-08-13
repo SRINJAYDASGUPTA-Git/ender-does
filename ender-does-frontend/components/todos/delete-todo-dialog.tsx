@@ -57,7 +57,7 @@ export function DeleteTodoDialog({
             open={open}
             onOpenChange={onOpenChange}
         >
-            <AlertDialogContent>
+            <AlertDialogContent data-testid="delete-todo-dialog">
                 <AlertDialogHeader>
                     <AlertDialogTitle>
                         Delete this task?
@@ -73,11 +73,12 @@ export function DeleteTodoDialog({
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={loading}>
+                    <AlertDialogCancel data-testid="delete-todo-cancel" disabled={loading}>
                         Cancel
                     </AlertDialogCancel>
 
                     <AlertDialogAction
+                        data-testid="delete-todo-confirm"
                         variant="destructive"
                         disabled={loading}
                         onClick={handleDelete}

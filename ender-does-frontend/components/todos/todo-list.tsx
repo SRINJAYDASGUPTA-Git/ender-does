@@ -217,6 +217,7 @@ export function TodoList() {
                     {/* Only show create on All / Active */}
                     {view !== "completed" && (
                         <Button
+                            data-testid="create-todo-button"
                             onClick={() => setCreateOpen(true)}
                         >
                             Create Task
@@ -226,7 +227,7 @@ export function TodoList() {
 
                 {/* Summary */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <Card>
+                    <Card data-testid="todo-total">
                         <CardContent className="p-5">
                             <p className="text-2xl font-bold">
                                 {todos.length}
@@ -238,7 +239,7 @@ export function TodoList() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card data-testid="todo-active">
                         <CardContent className="p-5">
                             <p className="text-2xl font-bold">
                                 {todos.filter((todo) => !todo.done).length}
@@ -250,7 +251,7 @@ export function TodoList() {
                         </CardContent>
                     </Card>
 
-                    <Card>
+                    <Card data-testid="todo-completed">
                         <CardContent className="p-5">
                             <p className="text-2xl font-bold">
                                 {todos.filter((todo) => todo.done).length}
@@ -264,7 +265,7 @@ export function TodoList() {
                 </div>
 
                 {/* To do list */}
-                <Card>
+                <Card data-testid="todo-list">
                     <CardHeader>
                         <CardTitle>
                             {visibleTodos.length}{" "}
@@ -295,6 +296,7 @@ export function TodoList() {
 
                                 {view !== "completed" && (
                                     <Button
+                                        data-testid="create-todo-body-button"
                                         className="mt-5"
                                         onClick={() =>
                                             setCreateOpen(true)

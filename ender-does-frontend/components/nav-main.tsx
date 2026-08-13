@@ -33,8 +33,8 @@ export function NavMain() {
         <SidebarMenu>
           {/* Overview */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Overview">
-              <Link href="/">
+            <SidebarMenuButton data-testid={"nav-overview"} asChild tooltip="Overview">
+              <Link href="/dashboard">
                 <LayoutDashboardIcon />
                 <span>Overview</span>
               </Link>
@@ -48,7 +48,7 @@ export function NavMain() {
           >
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
-                <SidebarMenuButton tooltip="Tasks">
+                <SidebarMenuButton data-testid={"nav-tasks"} tooltip="Tasks">
                   <ListTodoIcon />
                   <span>Tasks</span>
 
@@ -59,7 +59,7 @@ export function NavMain() {
               <CollapsibleContent>
                 <SidebarMenuSub>
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
+                    <SidebarMenuSubButton data-testid={"nav-all-tasks"} asChild>
                       <a href="/todos">
                         <ListTodoIcon />
                         <span>All Tasks</span>
@@ -68,7 +68,7 @@ export function NavMain() {
                   </SidebarMenuSubItem>
 
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
+                    <SidebarMenuSubButton data-testid={"nav-active-tasks"} asChild>
                       <a href="/todos?view=active">
                         <CircleIcon />
                         <span>Active</span>
@@ -77,7 +77,7 @@ export function NavMain() {
                   </SidebarMenuSubItem>
 
                   <SidebarMenuSubItem>
-                    <SidebarMenuSubButton asChild>
+                    <SidebarMenuSubButton data-testid={"nav-completed-tasks"} asChild>
                       <a href="/todos?view=completed">
                         <CheckCircle2Icon />
                         <span>Completed</span>
@@ -90,7 +90,7 @@ export function NavMain() {
           </Collapsible>
           {/* Settings */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Settings">
+            <SidebarMenuButton data-testid={"nav-settings"} asChild tooltip="Settings">
               <a href="/settings">
                 <SettingsIcon />
                 <span>Settings</span>

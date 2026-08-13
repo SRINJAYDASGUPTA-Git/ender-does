@@ -13,6 +13,7 @@ import {Card, CardContent, CardHeader, CardTitle,} from "@/components/ui/card";
 import {Progress} from "@/components/ui/progress";
 
 import {TodoResponse} from "@/types";
+import {toast} from "@/components/ui/toast";
 
 export default function Home() {
   const { user, loading: userLoading } = useUser();
@@ -28,7 +29,13 @@ export default function Home() {
   }, [user, userLoading, router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      toast.add({
+        type: "error",
+        description: "Not logged in",
+        priority: "high",
+      });
+    }
 
     const fetchTodos = async () => {
       try {
@@ -122,7 +129,7 @@ export default function Home() {
         </div>
 
         {/* Progress */}
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden" data-testid={'dashboard-progress-card'}>
           <CardContent className="p-6">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
 

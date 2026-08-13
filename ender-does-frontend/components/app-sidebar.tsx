@@ -31,12 +31,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     }
 
     if (!user) {
-        toast.add({
-            type: "error",
-            description: "Not logged in",
-            priority: "high",
-        })
-        router.push("/login")
+        return null
     }
     return (
         <Sidebar collapsible="icon" {...props}>

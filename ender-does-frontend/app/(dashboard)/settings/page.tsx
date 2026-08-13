@@ -14,9 +14,16 @@ import { useRouter } from "next/navigation";
 
 import axios from "@/utils/axiosInstance";
 import { useUser } from "@/providers/UserContext";
-import { UserUpdateRequest, UserResponse } from "@/types";
+import {
+    UserUpdateRequest,
+    UserResponse,
+} from "@/types";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -34,18 +41,31 @@ import {
 } from "@/components/ui/field";
 
 export default function SettingsPage() {
-    const { user, loading: userLoading, setUser } = useUser();
+    const {
+        user,
+        loading: userLoading,
+        setUser,
+    } = useUser();
+
     const router = useRouter();
 
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef =
+        useRef<HTMLInputElement>(null);
 
     const [name, setName] = useState("");
     const [imageUrl, setImageUrl] = useState("");
 
-    const [uploadingImage, setUploadingImage] = useState(false);
-    const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState("");
-    const [error, setError] = useState("");
+    const [uploadingImage, setUploadingImage] =
+        useState(false);
+
+    const [saving, setSaving] =
+        useState(false);
+
+    const [success, setSuccess] =
+        useState("");
+
+    const [error, setError] =
+        useState("");
 
     useEffect(() => {
         if (!userLoading && !user) {
@@ -87,12 +107,14 @@ export default function SettingsPage() {
 
         try {
             const formData = new FormData();
+
             formData.append("image", file);
 
-            const response = await axios.post<{ url: string }>(
-                "/upload/avatar",
-                formData
-            );
+            const response =
+                await axios.post<{ url: string }>(
+                    "/upload/avatar",
+                    formData
+                );
 
             setImageUrl(response.data.url);
         } catch (error: any) {
@@ -125,13 +147,17 @@ export default function SettingsPage() {
                 imageUrl,
             };
 
-            const response = await axios.put<UserResponse>(
-                "/users/me",
-                request
-            );
+            const response =
+                await axios.put<UserResponse>(
+                    "/users/me",
+                    request
+                );
 
             setUser(response.data);
-            setSuccess("Your profile has been updated.");
+
+            setSuccess(
+                "Your profile has been updated."
+            );
         } catch (error: any) {
             setError(
                 error.response?.data?.message ||
@@ -157,8 +183,10 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="mx-auto w-full max-w-3xl space-y-8 p-6 lg:p-8">
-
+        <div
+            data-testid="settings-page"
+            className="mx-auto w-full max-w-3xl space-y-8 p-6 lg:p-8"
+        >
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">
@@ -171,24 +199,31 @@ export default function SettingsPage() {
             </div>
 
             {/* Profile */}
-            <Card>
+            <Card data-testid="settings-profile-card">
                 <CardHeader>
-                    <CardTitle>Profile</CardTitle>
+                    <CardTitle>
+                        Profile
+                    </CardTitle>
 
                     <CardDescription>
-                        Update your name and profile picture.
+                        Update your name and profile
+                        picture.
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent>
                     <form
+                        data-testid="settings-form"
                         onSubmit={handleSave}
                         className="space-y-8"
                     >
                         {/* Avatar */}
                         <div className="flex flex-col items-center gap-4 sm:flex-row">
                             <div className="relative">
-                                <Avatar className="size-24 rounded-2xl">
+                                <Avatar
+                                    data-testid="settings-avatar"
+                                    className="size-24 rounded-2xl"
+                                >
                                     <AvatarImage
                                         src={imageUrl}
                                         alt={name}
@@ -201,10 +236,13 @@ export default function SettingsPage() {
 
                                 <button
                                     type="button"
+                                    data-testid="settings-avatar-button"
                                     onClick={() =>
                                         fileInputRef.current?.click()
                                     }
-                                    disabled={uploadingImage}
+                                    disabled={
+                                        uploadingImage
+                                    }
                                     className="absolute -bottom-2 -right-2 flex size-9 items-center justify-center rounded-full border bg-background shadow-sm transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
                                     aria-label="Change profile picture"
                                 >
@@ -216,11 +254,14 @@ export default function SettingsPage() {
                                 </button>
 
                                 <input
+                                    data-testid="settings-image-input"
                                     ref={fileInputRef}
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={handleImageSelect}
+                                    onChange={
+                                        handleImageSelect
+                                    }
                                 />
                             </div>
 
@@ -230,15 +271,19 @@ export default function SettingsPage() {
                                 </p>
 
                                 <p className="text-sm text-muted-foreground">
-                                    Choose an image to represent you.
+                                    Choose an image to
+                                    represent you.
                                 </p>
 
                                 <Button
                                     type="button"
+                                    data-testid="settings-change-picture"
                                     variant="outline"
                                     size="sm"
                                     className="mt-3"
-                                    disabled={uploadingImage}
+                                    disabled={
+                                        uploadingImage
+                                    }
                                     onClick={() =>
                                         fileInputRef.current?.click()
                                     }
@@ -261,9 +306,12 @@ export default function SettingsPage() {
 
                                 <Input
                                     id="name"
+                                    data-testid="settings-name"
                                     value={name}
                                     onChange={(event) =>
-                                        setName(event.target.value)
+                                        setName(
+                                            event.target.value
+                                        )
                                     }
                                     className="pl-9"
                                     required
@@ -282,6 +330,7 @@ export default function SettingsPage() {
 
                                 <Input
                                     id="email"
+                                    data-testid="settings-email"
                                     value={user.email}
                                     className="bg-muted pl-9"
                                     disabled
@@ -290,20 +339,28 @@ export default function SettingsPage() {
                             </div>
 
                             <p className="text-xs text-muted-foreground">
-                                Your email address cannot be changed here.
+                                Your email address
+                                cannot be changed here.
                             </p>
                         </Field>
 
                         {/* Feedback */}
                         {error && (
-                            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                            <div
+                                data-testid="settings-error"
+                                className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+                            >
                                 {error}
                             </div>
                         )}
 
                         {success && (
-                            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/5 p-3 text-sm text-green-600">
+                            <div
+                                data-testid="settings-success"
+                                className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/5 p-3 text-sm text-green-600"
+                            >
                                 <CheckCircle2 className="size-4" />
+
                                 {success}
                             </div>
                         )}
@@ -311,6 +368,7 @@ export default function SettingsPage() {
                         {/* Save */}
                         <div className="flex justify-end border-t pt-6">
                             <Button
+                                data-testid="settings-save"
                                 type="submit"
                                 disabled={
                                     saving ||
@@ -322,11 +380,13 @@ export default function SettingsPage() {
                                 {saving ? (
                                     <>
                                         <Loader2 className="size-4 animate-spin" />
+
                                         Saving...
                                     </>
                                 ) : (
                                     <>
                                         <Save className="size-4" />
+
                                         Save Changes
                                     </>
                                 )}
@@ -337,16 +397,20 @@ export default function SettingsPage() {
             </Card>
 
             {/* Account information */}
-            <Card>
+            <Card data-testid="settings-account-card">
                 <CardHeader>
-                    <CardTitle>Account</CardTitle>
+                    <CardTitle>
+                        Account
+                    </CardTitle>
 
                     <CardDescription>
-                        Information about your EnderDoes account.
+                        Information about your
+                        EnderDoes account.
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent className="space-y-4">
+                    {/* Account status */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
                             <p className="text-sm font-medium">
@@ -354,21 +418,26 @@ export default function SettingsPage() {
                             </p>
 
                             <p className="text-xs text-muted-foreground">
-                                Whether your account is currently active.
+                                Whether your account is
+                                currently active.
                             </p>
                         </div>
 
                         <span
+                            data-testid="settings-account-status"
                             className={
                                 user.enabled
                                     ? "rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600"
                                     : "rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive"
                             }
                         >
-              {user.enabled ? "Enabled" : "Disabled"}
-            </span>
+                            {user.enabled
+                                ? "Enabled"
+                                : "Disabled"}
+                        </span>
                     </div>
 
+                    {/* Account locked */}
                     <div className="flex items-center justify-between rounded-lg border p-4">
                         <div>
                             <p className="text-sm font-medium">
@@ -376,37 +445,45 @@ export default function SettingsPage() {
                             </p>
 
                             <p className="text-xs text-muted-foreground">
-                                Current account security status.
+                                Current account security
+                                status.
                             </p>
                         </div>
 
                         <span
+                            data-testid="settings-account-locked"
                             className={
                                 user.accountLocked
                                     ? "rounded-full bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive"
                                     : "rounded-full bg-green-500/10 px-3 py-1 text-xs font-medium text-green-600"
                             }
                         >
-              {user.accountLocked
-                  ? "Locked"
-                  : "Not locked"}
-            </span>
+                            {user.accountLocked
+                                ? "Locked"
+                                : "Not locked"}
+                        </span>
                     </div>
 
+                    {/* Roles */}
                     <div className="rounded-lg border p-4">
                         <p className="text-sm font-medium">
                             Roles
                         </p>
 
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {user.roles.map((role) => (
-                                <span
-                                    key={role}
-                                    className="rounded-full bg-muted px-3 py-1 text-xs font-medium"
-                                >
-                  {role}
-                </span>
-                            ))}
+                        <div
+                            data-testid="settings-roles"
+                            className="mt-2 flex flex-wrap gap-2"
+                        >
+                            {user.roles.map(
+                                (role) => (
+                                    <span
+                                        key={role}
+                                        className="rounded-full bg-muted px-3 py-1 text-xs font-medium"
+                                    >
+                                        {role}
+                                    </span>
+                                )
+                            )}
                         </div>
                     </div>
                 </CardContent>

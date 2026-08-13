@@ -42,10 +42,12 @@ export function TodoItem({
 
     return (
         <div
+            data-testid={`todo-item-${todo.id}`}
             className="group flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50"
         >
             {/* Complete */}
             <button
+                data-testid={`todo-complete-${todo.id}`}
                 type="button"
                 onClick={() => {
                     if (!todo.done && !isProcessing) {
@@ -76,6 +78,7 @@ export function TodoItem({
             {/* Content */}
             <div className="min-w-0 flex-1">
                 <p
+                    data-testid={`todo-title-${todo.id}`}
                     className={
                         todo.done
                             ? "truncate text-sm text-muted-foreground line-through"
@@ -86,7 +89,7 @@ export function TodoItem({
                 </p>
 
                 {todo.body && (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                    <p data-testid={`todo-body-${todo.id}`} className="mt-1 truncate text-xs text-muted-foreground">
                         {todo.body}
                     </p>
                 )}
@@ -96,6 +99,7 @@ export function TodoItem({
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button
+                        data-testid={`todo-actions-${todo.id}`}
                         variant="ghost"
                         size="icon"
                         className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100"

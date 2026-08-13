@@ -1,73 +1,212 @@
 import {
     Given,
     When,
-    Then,
+    Then, After,
 } from "@cucumber/cucumber";
 
 import { expect } from "@playwright/test";
 
 import { CustomWorld } from "../support/world";
 
-const TEST_EMAIL =
-    process.env.TEST_USER_EMAIL ?? "test@example.com";
-
-const TEST_PASSWORD =
-    process.env.TEST_USER_PASSWORD ?? "password";
-
-console.log(TEST_EMAIL, TEST_PASSWORD);
-
-
+/**
+ * Find a to-do using its rendered title and return
+ * the containing to-do item.
+ *
+ * We use the title to discover the item's dynamic ID,
+ * then operate entirely inside that item.
+ */
 async function findTodo(
     world: CustomWorld,
     title: string
 ) {
-    return world.page
-        .locator("div")
-        .filter({
-            hasText: title,
-        })
-        .filter({
-            has: world.page.getByText(title, {
-                exact: true,
-            }),
-        })
-        .first();
+    const titleLocator = world.page.getByTestId(
+        /^todo-title-/
+    );
+
+    const count = await titleLocator.count();
+
+    for (let i = 0; i < count; i++) {
+        const candidate = titleLocator.nth(i);
+
+        if (
+            (await candidate.textContent())?.trim() ===
+            title
+        ) {
+            const testId =
+                await candidate.getAttribute(
+                    "data-testid"
+                );
+
+            if (!testId) {
+                continue;
+            }
+
+            const todoId =
+                testId.replace(
+                    "todo-title-",
+                    ""
+                );
+
+            return world.page.getByTestId(
+                `todo-item-${todoId}`
+            );
+        }
+    }
+
+    return world.page.getByTestId(
+        "todo-item-not-found"
+    );
 }
+async function deleteTodosByTitle(
+    world: CustomWorld,
+    title: string
+) {
+    await world.page.goto("/todos");
 
+    const titleLocators =
+        world.page.getByTestId(/^todo-title-/);
 
-// ======================================================
-// Authentication
-// ======================================================
+    const ids: string[] = [];
 
-Given(
-    "I am logged in",
-    async function (this: CustomWorld) {
-        await this.page.goto("/login");
+    const count = await titleLocators.count();
 
-        await this.page
-            .getByLabel("Email")
-            .fill(TEST_EMAIL);
+    for (let i = 0; i < count; i++) {
+        const titleLocator =
+            titleLocators.nth(i);
 
-        await this.page
-            .getByRole("textbox", {
-                name: "Password",
-            })
-            .fill(TEST_PASSWORD);
+        const text =
+            await titleLocator.textContent();
 
-        await this.page
-            .getByRole("button", {
-                name: "Sign In",
+        if (text?.trim() !== title) {
+            continue;
+        }
+
+        const testId =
+            await titleLocator.getAttribute(
+                "data-testid"
+            );
+
+        if (!testId) {
+            continue;
+        }
+
+        ids.push(
+            testId.replace(
+                "todo-title-",
+                ""
+            )
+        );
+    }
+
+    for (const id of ids) {
+        const todo =
+            world.page.getByTestId(
+                `todo-item-${id}`
+            );
+
+        if (await todo.count() === 0) {
+            continue;
+        }
+
+        await todo
+            .getByTestId(
+                `todo-actions-${id}`
+            )
+            .click();
+
+        await world.page
+            .getByRole("menuitem", {
+                name: "Delete",
+                exact: true,
             })
             .click();
 
-        await this.page.waitForURL("**/dashboard");
+        const dialog =
+            world.page.getByTestId(
+                "delete-todo-dialog"
+            );
+
+        await expect(dialog).toBeVisible();
+
+        await dialog
+            .getByTestId(
+                "delete-todo-confirm"
+            )
+            .click();
+
+        await expect(dialog)
+            .not.toBeVisible();
+
+        await expect(todo)
+            .not.toBeVisible({
+                timeout: 10000,
+            });
     }
-);
+}
+/**
+ * Create a to-do through the actual UI if it doesn't
+ * already exist.
+ */
+async function ensureTodo(
+    world: CustomWorld,
+    title: string
+) {
+    const existing = await findTodo(
+        world,
+        title
+    );
 
+    const existingCount =
+        await existing.count();
 
-// ======================================================
-// Navigation
-// ======================================================
+    if (existingCount > 1) {
+        throw new Error(
+            `Expected at most one todo titled "${title}", found ${existingCount}`
+        );
+    }
+
+    if (existingCount === 1) {
+        return;
+    }
+
+    await world.page
+        .getByTestId("create-todo-button")
+        .click();
+
+    const dialog = world.page.getByTestId(
+        "create-todo-dialog"
+    );
+
+    await expect(dialog).toBeVisible();
+
+    await dialog
+        .getByTestId("create-todo-title")
+        .fill(title);
+
+    await dialog
+        .getByTestId("create-todo-body")
+        .fill("Some description");
+
+    await dialog
+        .getByTestId("create-todo-submit")
+        .click();
+
+    await expect(dialog).not.toBeVisible();
+
+    await expect(
+        world.page.getByTestId(
+            /^todo-title-/
+        ).filter({
+            hasText: title,
+        })
+    ).toBeVisible({
+        timeout: 10000,
+    });
+}
+
+/* ======================================================
+   Navigation
+====================================================== */
 
 Given(
     "I am on the todos page",
@@ -75,17 +214,15 @@ Given(
         await this.page.goto("/todos");
 
         await expect(
-            this.page.getByRole("heading", {
-                name: /tasks/i,
-            })
+            this.page.getByTestId("todo-list")
         ).toBeVisible();
     }
 );
 
 
-// ======================================================
-// Create
-// ======================================================
+/* ======================================================
+   Create
+====================================================== */
 
 When(
     "I create a todo titled {string}",
@@ -93,40 +230,61 @@ When(
         this: CustomWorld,
         title: string
     ) {
-        const createButton = this.page
-            .getByRole("button", {
-                name: "Create Task",
-                exact: true,
-            })
-            .first();
+        await this.page
+            .getByTestId("create-todo-button")
+            .click();
 
-        await createButton.click();
-
-        const dialog = this.page.getByRole("dialog");
+        const dialog =
+            this.page.getByTestId(
+                "create-todo-dialog"
+            );
 
         await expect(dialog).toBeVisible();
 
         await dialog
-            .getByLabel("Title")
+            .getByTestId("create-todo-title")
             .fill(title);
 
         await dialog
-            .getByLabel("Description")
+            .getByTestId("create-todo-body")
             .fill("Some description");
 
+        const responsePromise =
+            this.page.waitForResponse(
+                response =>
+                    response.request().method() === "POST" &&
+                    response.url().includes("/todos")
+            );
+
         await dialog
-            .getByRole("button", {
-                name: "Create Task",
-                exact: true,
-            })
+            .getByTestId("create-todo-submit")
             .click();
 
-        await expect(dialog).not.toBeVisible();
+        const response =
+            await responsePromise;
+
+        expect(response.ok()).toBeTruthy();
+
+        await expect(dialog)
+            .not.toBeVisible({
+                timeout: 10000,
+            });
+
+        await this.page.reload();
 
         await expect(
-            this.page.getByText(title, {
-                exact: true,
-            })
+            this.page.getByTestId("todo-list")
+        ).toBeVisible({
+            timeout: 10000,
+        });
+
+        await expect(
+            this.page
+                .getByTestId(/^todo-title-/)
+                .filter({
+                    hasText: title,
+                })
+                .first()
         ).toBeVisible({
             timeout: 10000,
         });
@@ -134,9 +292,9 @@ When(
 );
 
 
-// ======================================================
-// Existing To do
-// ======================================================
+/* ======================================================
+   Existing To-do
+====================================================== */
 
 Given(
     "I have a todo titled {string}",
@@ -146,52 +304,25 @@ Given(
     ) {
         await this.page.goto("/todos");
 
-        const todo = await findTodo(
+        await ensureTodo(
             this,
             title
         );
 
-        if (await todo.count() === 0) {
-            await this.page
-                .getByRole("button", {
-                    name: "Create Task",
-                    exact: true,
-                })
-                .first()
-                .click();
-
-            const dialog = this.page.getByRole("dialog");
-
-            await expect(dialog).toBeVisible();
-
-            await dialog
-                .getByLabel("Title", {
-                    exact: true,
-                })
-                .fill(title);
-
-            await dialog
-                .getByRole("button", {
-                    name: "Create Task",
-                    exact: true,
-                })
-                .click();
-
-            await expect(dialog).not.toBeVisible();
-        }
-
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
         ).toBeVisible();
     }
 );
 
 
-// ======================================================
-// Active To do
-// ======================================================
+/* ======================================================
+   Active to-do
+====================================================== */
 
 Given(
     "I have an active todo titled {string}",
@@ -203,45 +334,71 @@ Given(
             "/todos?view=active"
         );
 
-        const todo = await findTodo(
+        let todo = await findTodo(
             this,
             title
         );
 
-        if (
-            await todo.count() === 0
-        ) {
+        if (await todo.count() === 0) {
             await this.page.goto("/todos");
 
-            await this.page
-                .getByRole("button", {
-                    name: /create task/i,
-                })
-                .click();
+            await ensureTodo(
+                this,
+                title
+            );
 
-            await this.page
-                .getByLabel("Title")
-                .fill(title);
-
-            await this.page
-                .getByRole("button", {
-                    name: /create/i,
-                })
-                .click();
+            todo = await findTodo(
+                this,
+                title
+            );
         }
 
+        /*
+         * If it exists but is completed, reopen it.
+         */
+        const actions =
+            todo.getByTestId(
+                /todo-actions-/
+            );
+
+        if (await actions.count() > 0) {
+            await actions.click();
+
+            const reopen =
+                this.page.getByRole(
+                    "menuitem",
+                    {
+                        name: "Mark as not done",
+                        exact: true,
+                    }
+                );
+
+            if (
+                await reopen.count() > 0 &&
+                await reopen.isVisible()
+            ) {
+                await reopen.click();
+            }
+        }
+
+        await this.page.goto(
+            "/todos?view=active"
+        );
+
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
         ).toBeVisible();
     }
 );
 
 
-// ======================================================
-// Completed To do
-// ======================================================
+/* ======================================================
+   Completed to-do
+====================================================== */
 
 Given(
     "I have a completed todo titled {string}",
@@ -249,67 +406,95 @@ Given(
         this: CustomWorld,
         title: string
     ) {
+        // Always start from the normal/all view.
         await this.page.goto("/todos");
 
-        const todo = await findTodo(
+        // Make sure the to-do exists.
+        let todo = await findTodo(
             this,
             title
         );
 
-        if (
-            await todo.count() === 0
-        ) {
+        if (await todo.count() === 0) {
             await this.page
-                .getByRole("button", {
-                    name: /create task/i,
-                })
+                .getByTestId("create-todo-button")
                 .click();
 
-            await this.page
-                .getByLabel("Title")
+            const dialog =
+                this.page.getByTestId(
+                    "create-todo-dialog"
+                );
+
+            await expect(dialog).toBeVisible();
+
+            await dialog
+                .getByTestId("create-todo-title")
                 .fill(title);
 
-            await this.page
-                .getByRole("button", {
-                    name: /create/i,
-                })
-                .click();
-        }
+            await dialog
+                .getByTestId("create-todo-body")
+                .fill("Some description");
 
-        const completedView =
-            this.page.getByText(title, {
-                exact: true,
+            await dialog
+                .getByTestId("create-todo-submit")
+                .click();
+
+            await expect(dialog)
+                .not.toBeVisible();
+
+            // Wait for the newly-created to do.
+            await expect(
+                this.page.getByTestId(
+                    /^todo-title-/
+                ).filter({
+                    hasText: title,
+                }).first()
+            ).toBeVisible({
+                timeout: 10000,
             });
 
-        // If it isn't already completed,
-        // complete it.
-        const checkbox =
-            completedView
-                .locator("xpath=..")
-                .getByRole("button", {
-                    name: /mark as complete/i,
-                });
-
-        if (await checkbox.count() > 0) {
-            await checkbox.click();
+            todo = await findTodo(
+                this,
+                title
+            );
         }
 
+        await expect(todo).toBeVisible();
+
+        // Complete it only if it isn't already completed.
+        const completeButton =
+            todo.getByTestId(
+                /todo-complete-/
+            );
+
+        if (
+            await completeButton.count() > 0 &&
+            await completeButton.isEnabled()
+        ) {
+            await completeButton.click();
+        }
+
+        // Now verify through the completed view.
         await this.page.goto(
             "/todos?view=completed"
         );
 
         await expect(
-            this.page.getByText(title, {
-                exact: true,
-            })
-        ).toBeVisible();
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
+            }).first()
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
 
 
-// ======================================================
-// Complete
-// ======================================================
+/* ======================================================
+   Complete
+====================================================== */
 
 When(
     "I mark {string} as complete",
@@ -322,24 +507,38 @@ When(
             title
         );
 
+        await expect(todo).toBeVisible();
+
         await todo
-            .getByRole("button", {
-                name: /mark as complete/i,
-            })
+            .getByTestId(
+                /todo-complete-/
+            )
             .click();
 
+        /*
+         * Completion moves the item into the completed
+         * view, so verify through the completed view.
+         */
+        await this.page.goto(
+            "/todos?view=completed"
+        );
+
         await expect(
-            todo.getByRole("button", {
-                name: /completed/i,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
-        ).toBeVisible();
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
 
 
-// ======================================================
-// Reopen
-// ======================================================
+/* ======================================================
+   Reopen
+====================================================== */
 
 When(
     "I choose {string} for {string}",
@@ -353,69 +552,87 @@ When(
             title
         );
 
+        await expect(todo).toBeVisible();
+
         await todo
-            .getByRole("button", {
-                name: /task actions/i,
-            })
+            .getByTestId(
+                /todo-actions-/
+            )
             .click();
 
         await this.page
             .getByRole("menuitem", {
                 name: action,
+                exact: true,
             })
             .click();
     }
 );
 
 
-// ======================================================
-// Edit
-// ======================================================
+/* ======================================================
+   Edit
+====================================================== */
 
 When(
-    "I edit the todo to {string}",
+    "I edit {string} to {string}",
     async function (
         this: CustomWorld,
+        oldTitle: string,
         newTitle: string
     ) {
         const todo = await findTodo(
             this,
-            "Test Todo"
+            oldTitle
         );
 
         await expect(todo).toBeVisible();
 
-        console.log("=== TODO TEXT ===");
-        console.log(await todo.innerText());
+        await todo
+            .getByTestId(/todo-actions-/)
+            .click();
 
-        console.log("=== TODO BUTTONS ===");
-        console.log(
-            await todo
-                .getByRole("button")
-                .allTextContents()
-        );
+        await this.page
+            .getByRole("menuitem", {
+                name: "Edit",
+                exact: true,
+            })
+            .click();
 
-        console.log("=== TODO BUTTON ARIA ===");
-        console.log(
-            await todo
-                .locator("button")
-                .evaluateAll((buttons) =>
-                    buttons.map((button) => ({
-                        text: button.textContent,
-                        ariaLabel:
-                            button.getAttribute("aria-label"),
-                        title:
-                            button.getAttribute("title"),
-                    }))
-                )
-        );
+        const dialog =
+            this.page.getByTestId(
+                "edit-todo-dialog"
+            );
+
+        await expect(dialog).toBeVisible();
+
+        await dialog
+            .getByTestId("edit-todo-title")
+            .fill(newTitle);
+
+        await dialog
+            .getByTestId("edit-todo-submit")
+            .click();
+
+        await expect(dialog)
+            .not.toBeVisible();
+
+        await expect(
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: newTitle,
+            })
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
 
 
-// ======================================================
-// Delete
-// ======================================================
+/* ======================================================
+   Delete
+====================================================== */
 
 When(
     "I delete {string}",
@@ -428,38 +645,47 @@ When(
             title
         );
 
+        await expect(todo).toBeVisible();
+
         await todo
-            .getByRole("button", {
-                name: /task actions/i,
-            })
+            .getByTestId(/todo-actions-/)
             .click();
 
         await this.page
             .getByRole("menuitem", {
-                name: /delete/i,
-            })
-            .click();
-
-        // Confirmation dialog
-        await this.page
-            .getByRole("button", {
-                name: /delete/i,
-            })
-            .last()
-            .click();
-
-        await expect(
-            this.page.getByText(title, {
+                name: "Delete",
                 exact: true,
             })
-        ).not.toBeVisible();
+            .click();
+
+        const dialog =
+            this.page.getByTestId(
+                "delete-todo-dialog"
+            );
+
+        await expect(dialog).toBeVisible();
+
+        await dialog
+            .getByTestId(
+                "delete-todo-confirm"
+            )
+            .click();
+
+        await expect(dialog)
+            .not.toBeVisible();
+
+        // Assert the exact to-do we deleted is gone.
+        await expect(todo)
+            .not.toBeVisible({
+                timeout: 10000,
+            });
     }
 );
 
 
-// ======================================================
-// Assertions
-// ======================================================
+/* ======================================================
+   Assertions
+====================================================== */
 
 Then(
     "I should see {string} in my tasks",
@@ -468,12 +694,17 @@ Then(
         title: string
     ) {
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
-        ).toBeVisible();
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
+
 
 Then(
     "I should not see {string} in my tasks",
@@ -482,12 +713,15 @@ Then(
         title: string
     ) {
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
         ).not.toBeVisible();
     }
 );
+
 
 Then(
     "{string} should be marked as completed",
@@ -495,23 +729,22 @@ Then(
         this: CustomWorld,
         title: string
     ) {
-        await expect(
-            this.page.getByText(title, {
-                exact: true,
-            })
-        ).toBeVisible();
-
         await this.page.goto(
             "/todos?view=completed"
         );
 
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
-        ).toBeVisible();
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
+
 
 Then(
     "{string} should be marked as active",
@@ -524,9 +757,38 @@ Then(
         );
 
         await expect(
-            this.page.getByText(title, {
-                exact: true,
+            this.page.getByTestId(
+                /^todo-title-/
+            ).filter({
+                hasText: title,
             })
-        ).toBeVisible();
+        ).toBeVisible({
+            timeout: 10000,
+        });
     }
 );
+
+After(async function (this: CustomWorld) {
+    const titles = [
+        "Create Test Todo",
+        "Edit Test Todo",
+        "Updated Test Todo",
+        "Complete Test Todo",
+        "Reopen Test Todo",
+        "Delete Test Todo",
+    ];
+
+    for (const title of titles) {
+        try {
+            await deleteTodosByTitle(
+                this,
+                title
+            );
+        } catch (error) {
+            console.error(
+                `Cleanup failed for "${title}":`,
+                error
+            );
+        }
+    }
+});

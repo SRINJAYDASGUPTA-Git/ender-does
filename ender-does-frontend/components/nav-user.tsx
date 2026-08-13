@@ -65,6 +65,7 @@ export function NavUser({user}: { user: UserResponse }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton
+                  data-testid="user-menu"
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
@@ -149,6 +150,7 @@ export function NavUser({user}: { user: UserResponse }) {
               <DropdownMenuSeparator />
 
               <DropdownMenuItem
+                  data-testid="logout-button"
                   variant="destructive"
                   onClick={handleLogout}
               >

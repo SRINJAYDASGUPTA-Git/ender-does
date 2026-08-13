@@ -77,6 +77,7 @@ export function RegisterForm({
 
     return (
         <form
+            data-testid={"register-form"}
             onSubmit={handleSubmit}
             className={cn(
                 "flex flex-col gap-6",
@@ -101,6 +102,7 @@ export function RegisterForm({
                     </FieldLabel>
 
                     <Input
+                        data-testid={"register-name"}
                         id="name"
                         type="text"
                         placeholder="Srinjay Dasgupta"
@@ -119,6 +121,7 @@ export function RegisterForm({
                     </FieldLabel>
 
                     <Input
+                        data-testid={"register-email"}
                         id="email"
                         type="email"
                         placeholder="you@example.com"
@@ -138,6 +141,7 @@ export function RegisterForm({
 
                     <div className="relative">
                         <Input
+                            data-testid={"register-password"}
                             id="password"
                             type={showPassword ? "text" : "password"}
                             autoComplete="new-password"
@@ -169,6 +173,7 @@ export function RegisterForm({
 
                     <div className="relative">
                         <Input
+                            data-testid={"register-confirm-password"}
                             id="confirm-password"
                             type={showConfirmPassword ? "text" : "password"}
                             autoComplete="new-password"
@@ -200,12 +205,13 @@ export function RegisterForm({
                 </Field>
 
                 {error && (
-                    <p className="text-sm text-destructive">
+                    <p data-testid={"register-error"} className="text-sm text-destructive">
                         {error}
                     </p>
                 )}
 
                 <Button
+                    data-testid={"register-submit"}
                     type="submit"
                     disabled={loading}
                     className="w-full"

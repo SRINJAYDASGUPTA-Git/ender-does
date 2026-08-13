@@ -89,7 +89,7 @@ export function EditTodoDialog({
             open={open}
             onOpenChange={onOpenChange}
         >
-            <DialogContent>
+            <DialogContent data-testid="edit-todo-dialog">
                 <DialogHeader>
                     <DialogTitle>
                         Edit task
@@ -111,6 +111,7 @@ export function EditTodoDialog({
 
                         <Input
                             id="edit-todo-title"
+                            data-testid="edit-todo-title"
                             required
                             value={title}
                             onChange={(event) =>
@@ -126,6 +127,7 @@ export function EditTodoDialog({
 
                         <Textarea
                             id="edit-todo-body"
+                            data-testid="edit-todo-body"
                             rows={4}
                             value={body}
                             onChange={(event) =>
@@ -142,6 +144,7 @@ export function EditTodoDialog({
 
                     <DialogFooter>
                         <Button
+                            data-testid="edit-todo-cancel"
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
@@ -151,6 +154,7 @@ export function EditTodoDialog({
                         </Button>
 
                         <Button
+                            data-testid="edit-todo-submit"
                             type="submit"
                             disabled={loading}
                         >

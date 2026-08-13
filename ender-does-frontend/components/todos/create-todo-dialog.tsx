@@ -86,7 +86,7 @@ export function CreateTodoDialog({
                 onOpenChange(value);
             }}
         >
-            <DialogContent>
+            <DialogContent data-testid="create-todo-dialog">
                 <DialogHeader>
                     <DialogTitle>
                         Create a task
@@ -108,6 +108,7 @@ export function CreateTodoDialog({
 
                         <Input
                             id="todo-title"
+                            data-testid="create-todo-title"
                             placeholder="Finish the frontend"
                             required
                             value={title}
@@ -124,6 +125,7 @@ export function CreateTodoDialog({
 
                         <Textarea
                             id="todo-body"
+                            data-testid="create-todo-body"
                             placeholder="Add some details..."
                             rows={4}
                             value={body}
@@ -141,6 +143,7 @@ export function CreateTodoDialog({
 
                     <DialogFooter>
                         <Button
+                            data-testid="create-todo-cancel"
                             type="button"
                             variant="outline"
                             onClick={() => onOpenChange(false)}
@@ -150,6 +153,7 @@ export function CreateTodoDialog({
                         </Button>
 
                         <Button
+                            data-testid="create-todo-submit"
                             type="submit"
                             disabled={loading}
                         >
