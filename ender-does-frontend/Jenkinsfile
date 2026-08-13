@@ -1,0 +1,112 @@
+pipeline {
+    agent any
+
+    environment {
+        IMAGE_NAME = "srinjay2004/ender-does-frontend"
+        CONTAINER_NAME = "ender-does-frontend"
+        CONTAINER_PORT = "3000"
+        HOST_PORT = "3000"
+    }
+
+    stages {
+
+        stage("Checkout") {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage("Install Dependencies") {
+            steps {
+                dir("ender-does-frontend") {
+                    sh "npm ci"
+                }
+            }
+        }
+
+        stage("Build") {
+            steps {
+                dir("ender-does-frontend") {
+                    sh "npm run build"
+                }
+            }
+        }
+
+        stage("Build Docker Image") {
+            steps {
+                dir("ender-does-frontend") {
+                    sh """
+                        docker build \
+                            -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                            -t ${IMAGE_NAME}:latest \
+                            .
+                    """
+                }
+            }
+        }
+
+        stage("Deploy Container") {
+            withCredentials([
+                    string(
+                        credentialsId: 'imgbb-api-key',
+                        variable: 'IMGBB_API_KEY'
+                    ),
+                    string(
+                        credentialsId: 'enderdoes-test-user-password',
+                        variable: 'TEST_USER_PASSWORD'
+                    ),
+
+                ])
+            steps {
+                sh """
+                    docker rm -f ${CONTAINER_NAME} || true
+
+                    docker run -d \
+                        --name ${CONTAINER_NAME} \
+                        -p ${HOST_PORT}:${CONTAINER_PORT} \
+                        -e NODE_ENV=production \
+                        -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
+                        -e TEST_USER_EMAIL=e2e@enderdoes.local \
+                        -e IMGBB_API_KEY=${IMGBB_API_KEY}
+                        -e TEST_USER_PASSWORD=${TEST_USER_PASSWORD}
+                        ${IMAGE_NAME}:${BUILD_NUMBER}
+                """
+            }
+        }
+
+        stage("Verify Deployment") {
+            steps {
+                sh '''
+                    echo "Waiting for frontend..."
+
+                    for i in $(seq 1 30); do
+                        if curl -fsS http://localhost:3000/login > /dev/null; then
+                            echo "Frontend is running."
+                            exit 0
+                        fi
+
+                        sleep 2
+                    done
+
+                    echo "Frontend failed to start."
+                    docker logs ${CONTAINER_NAME}
+                    exit 1
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Frontend deployment successful."
+        }
+
+        failure {
+            echo "Frontend deployment failed."
+
+            sh """
+                docker logs ${CONTAINER_NAME} || true
+            """
+        }
+    }
+}
