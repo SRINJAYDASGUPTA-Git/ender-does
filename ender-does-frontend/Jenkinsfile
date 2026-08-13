@@ -46,19 +46,20 @@ pipeline {
         }
 
         stage("Deploy Container") {
-            withCredentials([
-                    string(
-                        credentialsId: 'imgbb-api-key',
-                        variable: 'IMGBB_API_KEY'
-                    ),
-                    string(
-                        credentialsId: 'enderdoes-test-user-password',
-                        variable: 'TEST_USER_PASSWORD'
-                    ),
 
-                ])
             steps {
-                sh """
+                withCredentials([
+                        string(
+                            credentialsId: 'imgbb-api-key',
+                            variable: 'IMGBB_API_KEY'
+                        ),
+                        string(
+                            credentialsId: 'enderdoes-test-user-password',
+                            variable: 'TEST_USER_PASSWORD'
+                        ),
+
+                    ]){
+                    sh """
                     docker rm -f ${CONTAINER_NAME} || true
 
                     docker run -d \
@@ -71,6 +72,7 @@ pipeline {
                         -e TEST_USER_PASSWORD=${TEST_USER_PASSWORD}
                         ${IMAGE_NAME}:${BUILD_NUMBER}
                 """
+                }
             }
         }
 
