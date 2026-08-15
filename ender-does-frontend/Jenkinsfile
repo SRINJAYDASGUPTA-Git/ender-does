@@ -61,19 +61,19 @@ pipeline {
                         ),
 
                     ]){
-                    sh """
-                    docker rm -f ${CONTAINER_NAME} || true
+                    sh '''
+                docker rm -f "$CONTAINER_NAME" || true
 
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p ${HOST_PORT}:${CONTAINER_PORT} \
-                        -e NODE_ENV=production \
-                        -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
-                        -e TEST_USER_EMAIL=e2e@enderdoes.local \
-                        -e IMGBB_API_KEY=${IMGBB_API_KEY}
-                        -e TEST_USER_PASSWORD=${TEST_USER_PASSWORD}
-                        ${IMAGE_NAME}:${BUILD_NUMBER}
-                """
+                docker run -d \
+                    --name "$CONTAINER_NAME" \
+                    -p "$HOST_PORT:$CONTAINER_PORT" \
+                    -e NODE_ENV=production \
+                    -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
+                    -e TEST_USER_EMAIL=e2e@enderdoes.local \
+                    -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
+                    -e IMGBB_API_KEY="$IMGBB_API_KEY" \
+                    "$IMAGE_NAME:$BUILD_NUMBER"
+            '''
                 }
             }
         }
