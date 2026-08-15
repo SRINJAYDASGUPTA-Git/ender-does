@@ -14,11 +14,10 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar"
-import {CheckSquare2Icon} from "lucide-react"
 import {useUser} from "@/providers/UserContext";
-import {toast} from "@/components/ui/toast"
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const {user, loading} = useUser()
@@ -43,20 +42,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                             className="cursor-default hover:bg-transparent"
                         >
                             <Link href="/dashboard" className="flex items-center justify-between w-[65%]">
-                                <div
-                                    className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                    <CheckSquare2Icon className="size-4"/>
-                                </div>
-
-                                <div className="flex flex-col text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">
-                                    EnderDoes
-                                </span>
-
-                                    <span className="truncate text-xs text-muted-foreground">
-                                    Get things done.
-                                </span>
-                                </div>
+                                <Image src={'/word_logo.png'} alt={'logo'} width={150} height={37}  />
                             </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
