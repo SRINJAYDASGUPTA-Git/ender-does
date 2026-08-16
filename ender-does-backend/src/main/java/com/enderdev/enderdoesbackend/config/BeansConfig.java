@@ -31,8 +31,8 @@ public class BeansConfig {
         config.setAllowCredentials (true);
 //        config.setAllowedOrigins (List.of ("*"));
         config.addAllowedOriginPattern("http://localhost:3000");
+        config.addAllowedOriginPattern("http://192.168.0.151:3000");
         config.addAllowedOriginPattern("https://enderdoes.srinjaydg.in");
-        config.addAllowedOriginPattern("https://*.vercel.app");
         config.setAllowedHeaders (Arrays.asList (ORIGIN, CONTENT_TYPE, ACCEPT, AUTHORIZATION));
         config.setAllowedMethods (Arrays.asList ("GET", "POST", "PUT", "DELETE", "PATCH"));
         source.registerCorsConfiguration ("/**", config);
