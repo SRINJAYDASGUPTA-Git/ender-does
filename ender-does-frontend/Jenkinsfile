@@ -21,7 +21,7 @@ pipeline {
         stage("Install Dependencies") {
             steps {
                 dir("ender-does-frontend") {
-                    sh "npm ci"
+                    sh "npm ci --verbose"
                 }
             }
         }
