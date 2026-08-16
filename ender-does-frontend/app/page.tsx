@@ -15,6 +15,8 @@ import { useUser } from "@/providers/UserContext";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
+import * as React from "react";
 
 export default function LandingPage() {
     const router = useRouter();
@@ -41,19 +43,7 @@ export default function LandingPage() {
                         onClick={() => router.push("/")}
                         className="flex items-center gap-3"
                     >
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                            <CheckCircle2 className="size-5" />
-                        </div>
-
-                        <div className="text-left">
-                            <p className="font-semibold leading-none">
-                                EnderDoes
-                            </p>
-
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                                Simple. Focused. Done.
-                            </p>
-                        </div>
+                        <Image src={'/word_logo.png'} alt={'logo'} width={150} height={37}  />
                     </button>
 
                     <div className="flex items-center gap-3">

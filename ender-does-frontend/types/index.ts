@@ -60,7 +60,3 @@ export interface UserUpdateRequest {
     imageUrl: string;
     message?: string;
 }
-
-export interface AxiosResponse {
-    message: string;
-}

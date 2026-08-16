@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        label 'node-agent'
+    }
 
     environment {
         IMAGE_NAME = "srinjay2004/ender-does-frontend"
@@ -46,31 +48,33 @@ pipeline {
         }
 
         stage("Deploy Container") {
-            withCredentials([
-                    string(
-                        credentialsId: 'imgbb-api-key',
-                        variable: 'IMGBB_API_KEY'
-                    ),
-                    string(
-                        credentialsId: 'enderdoes-test-user-password',
-                        variable: 'TEST_USER_PASSWORD'
-                    ),
 
-                ])
             steps {
-                sh """
-                    docker rm -f ${CONTAINER_NAME} || true
+                withCredentials([
+                        string(
+                            credentialsId: 'imgbb-api-key',
+                            variable: 'IMGBB_API_KEY'
+                        ),
+                        string(
+                            credentialsId: 'enderdoes-test-user-password',
+                            variable: 'TEST_USER_PASSWORD'
+                        ),
 
-                    docker run -d \
-                        --name ${CONTAINER_NAME} \
-                        -p ${HOST_PORT}:${CONTAINER_PORT} \
-                        -e NODE_ENV=production \
-                        -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
-                        -e TEST_USER_EMAIL=e2e@enderdoes.local \
-                        -e IMGBB_API_KEY=${IMGBB_API_KEY}
-                        -e TEST_USER_PASSWORD=${TEST_USER_PASSWORD}
-                        ${IMAGE_NAME}:${BUILD_NUMBER}
-                """
+                    ]){
+                    sh '''
+                docker rm -f "$CONTAINER_NAME" || true
+
+                docker run -d \
+                    --name "$CONTAINER_NAME" \
+                    -p "$HOST_PORT:$CONTAINER_PORT" \
+                    -e NODE_ENV=production \
+                    -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
+                    -e TEST_USER_EMAIL=e2e@enderdoes.local \
+                    -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
+                    -e IMGBB_API_KEY="$IMGBB_API_KEY" \
+                    "$IMAGE_NAME:$BUILD_NUMBER"
+            '''
+                }
             }
         }
 

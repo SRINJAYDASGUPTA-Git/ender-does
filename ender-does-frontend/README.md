@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EnderDoes Frontend
 
-## Getting Started
+The frontend application for **EnderDoes**, a simple task management application built with Next.js.
 
-First, run the development server:
+## Tech Stack
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Playwright
+- Cucumber.js
+
+## Features
+
+- User authentication
+- Create, edit, complete, reopen, and delete todos
+- Active and completed task views
+- User settings
+- Profile image support
+- End-to-end testing with Cucumber and Playwright
+
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+````
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The application will be available at:
 
-You can start editing the page by modifying `app/(root)/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Testing
 
-## Learn More
+Run the Cucumber end-to-end test suite:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run test:e2e
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Generate the Cucumber report:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run test:e2e:report
+```
 
-## Deploy on Vercel
+## Production Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Build the application:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run build
+```
+
+Start the production server:
+
+```bash
+npm run start
+```
+
+## Docker
+
+The frontend can also be built and run as a Docker container:
+
+```bash
+docker build -t enderdoes-frontend .
+docker run -p 3000:3000 enderdoes-frontend
+```
+
+## Project Structure
+
+```text
+ender-does-frontend/
+├── app/
+├── components/
+├── providers/
+├── types/
+├── utils/
+├── tests/
+│   ├── features/
+│   ├── step-definitions/
+│   └── support/
+├── public/
+├── Dockerfile
+├── Jenkinsfile
+├── next.config.ts
+└── package.json
+```
+
+## CI/CD
+
+The frontend is part of the EnderDoes monorepo.
+
+Changes under:
+
+```text
+ender-does-frontend/
+```
+
+are intended to trigger the frontend Jenkins pipeline.
+
+The pipeline will eventually:
+
+1. Install dependencies
+2. Build the application
+3. Run the E2E test suite
+4. Generate the Cucumber report
+5. Build the Docker image
+6. Deploy the frontend

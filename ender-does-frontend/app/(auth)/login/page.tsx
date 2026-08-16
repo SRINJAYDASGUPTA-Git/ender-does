@@ -1,33 +1,18 @@
 "use client";
 
-import {
-    CheckSquare,
-    ListTodo,
-    Zap,
-    ShieldCheck,
-} from "lucide-react";
+import {ListTodo, ShieldCheck, Zap,} from "lucide-react";
 
-import { LoginForm } from "@/components/login-form";
+import {LoginForm} from "@/components/login-form";
+import Image from "next/image";
+import * as React from "react";
 
 export default function LoginPage() {
     return (
         <div className="grid min-h-screen lg:grid-cols-2">
             {/* Left */}
-            <div className="flex flex-col justify-between border-r bg-background p-8 lg:p-12">
+            <div className="flex flex-col justify-between border-r bg-[#18181a] p-8 lg:p-12">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-                        <CheckSquare className="size-5" />
-                    </div>
-
-                    <div>
-                        <h2 className="font-semibold">
-                            EnderDoes
-                        </h2>
-
-                        <p className="text-xs text-muted-foreground">
-                            Simple. Focused. Done.
-                        </p>
-                    </div>
+                    <Image src={'/word_logo.png'} alt={'logo'} width={150} height={37}  />
                 </div>
 
                 <div className="mx-auto max-w-md space-y-10">
