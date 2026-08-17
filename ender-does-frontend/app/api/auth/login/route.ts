@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         );
 
         const data:AuthenticationResponse = await backendResponse.json();
-
+        console.log({data})
         if (!backendResponse.ok) {
             return NextResponse.json(data, {
                 status: backendResponse.status,
@@ -35,14 +35,14 @@ export async function POST(request: NextRequest) {
 
         response.cookies.set("access_token", data.access_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: process.env.COOKIE_SECURE === "true",
             sameSite: "lax",
             path: "/"
         });
 
         response.cookies.set("refresh_token", data.refresh_token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: process.env.COOKIE_SECURE === "true",
             sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 30,

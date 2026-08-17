@@ -72,6 +72,7 @@ pipeline {
                     -e TEST_USER_EMAIL=e2e@enderdoes.local \
                     -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
                     -e IMGBB_API_KEY="$IMGBB_API_KEY" \
+                    -e COOKIE_SECURE=false \
                     "$IMAGE_NAME:$BUILD_NUMBER"
             '''
                 }
