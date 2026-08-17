@@ -4,10 +4,12 @@ pipeline {
     }
 
     environment {
+        PROJECT_NAME = 'enderdoes-frontend'
         IMAGE_NAME = "srinjay2004/ender-does-frontend"
         CONTAINER_NAME = "ender-does-frontend"
         CONTAINER_PORT = "3000"
         HOST_PORT = "3000"
+        DEPLOY_HOST  = '172.17.0.1'
     }
 
     stages {
@@ -21,7 +23,7 @@ pipeline {
         stage("Install Dependencies") {
             steps {
                 dir("ender-does-frontend") {
-                    sh "npm ci --verbose"
+                    sh "npm ci"
                 }
             }
         }
@@ -38,11 +40,34 @@ pipeline {
             steps {
                 dir("ender-does-frontend") {
                     sh """
-                        docker build \
+                        docker buildx build \
                             -t ${IMAGE_NAME}:${BUILD_NUMBER} \
                             -t ${IMAGE_NAME}:latest \
                             .
                     """
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )
+                    ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            -u "$DOCKER_USER" \
+                            --password-stdin
+
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
+
+                        docker logout
+                    '''
                 }
             }
         }
@@ -99,19 +124,194 @@ pipeline {
                 '''
             }
         }
+        stage('Configure Subdomain') {
+            steps {
+                withCredentials([
+                        sshUserPrivateKey(
+                            credentialsId: 'deployment-user-ssh-creds',
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USER'
+                        )
+                    ]) {
+                    sh '''
+                set +x
+
+                ssh -i "$SSH_KEY" \
+                    -o StrictHostKeyChecking=no \
+                    "$SSH_USER@${DEPLOY_HOST}" \
+                    "sudo -n /usr/local/bin/deploy-subdomain frontend enderdoes 3000"
+            '''
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "Frontend deployment successful."
+            echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+
+            emailext(
+                to: 'dasguptasrinjay2004@gmail.com',
+                subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
+
+                    <div style="
+                        background: linear-gradient(135deg, #0f172a, #1e3a8a);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 12px 12px 0 0;
+                    ">
+                        <h1>🚀 Deployment Successful</h1>
+                        <p>${PROJECT_NAME} has been deployed successfully.</p>
+                    </div>
+
+                    <div style="
+                        background: #f8fafc;
+                        padding: 25px;
+                        border: 1px solid #e2e8f0;
+                    ">
+
+                        <h2>Build Information</h2>
+
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 10px; font-weight: bold;">Project</td>
+                                <td style="padding: 10px;">${PROJECT_NAME}</td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding: 10px; font-weight: bold;">Build</td>
+                                <td style="padding: 10px;">#${BUILD_NUMBER}</td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding: 10px; font-weight: bold;">Docker Image</td>
+                                <td style="padding: 10px;">
+                                    ${DOCKER_IMAGE}:${IMAGE_TAG}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding: 10px; font-weight: bold;">Branch</td>
+                                <td style="padding: 10px;">
+                                    ${env.BRANCH_NAME}
+                                </td>
+                            </tr>
+                        </table>
+
+                        <div style="
+                            margin-top: 25px;
+                            padding: 15px;
+                            background: #dcfce7;
+                            border-radius: 8px;
+                            color: #166534;
+                        ">
+                            <strong>✓ Production deployment completed successfully.</strong>
+                        </div>
+
+                        <div style="margin-top: 25px;">
+                            <a href="${BUILD_URL}"
+                               style="
+                                   display: inline-block;
+                                   padding: 12px 20px;
+                                   background: #2563eb;
+                                   color: white;
+                                   text-decoration: none;
+                                   border-radius: 6px;
+                               ">
+                                View Jenkins Build
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <div style="
+                        padding: 15px;
+                        text-align: center;
+                        color: #64748b;
+                        font-size: 12px;
+                    ">
+                        EnderDoes CI/CD • Jenkins
+                    </div>
+
+                </div>
+            """
+            )
         }
 
         failure {
-            echo "Frontend deployment failed."
+            echo "Pipeline failed."
 
-            sh """
-                docker logs ${CONTAINER_NAME} || true
+            emailext(
+                to: 'dasguptasrinjay2004@gmail.com',
+                subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
+                mimeType: 'text/html',
+                body: """
+                <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
+
+                    <div style="
+                        background: linear-gradient(135deg, #450a0a, #991b1b);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 12px 12px 0 0;
+                    ">
+                        <h1>❌ Deployment Failed</h1>
+                        <p>${PROJECT_NAME} deployment failed.</p>
+                    </div>
+
+                    <div style="
+                        background: #f8fafc;
+                        padding: 25px;
+                    ">
+
+                        <h2>Build Information</h2>
+
+                        <p><strong>Project:</strong> ${PROJECT_NAME}</p>
+                        <p><strong>Build:</strong> #${BUILD_NUMBER}</p>
+                        <p><strong>Branch:</strong> ${env.BRANCH_NAME}</p>
+
+                        <div style="
+                            margin-top: 25px;
+                            padding: 15px;
+                            background: #fee2e2;
+                            border-radius: 8px;
+                            color: #991b1b;
+                        ">
+                            <strong>✗ The pipeline failed.</strong>
+                            <br>
+                            Check the Jenkins console output for details.
+                        </div>
+
+                        <div style="margin-top: 25px;">
+                            <a href="${BUILD_URL}"
+                               style="
+                                   display: inline-block;
+                                   padding: 12px 20px;
+                                   background: #dc2626;
+                                   color: white;
+                                   text-decoration: none;
+                                   border-radius: 6px;
+                               ">
+                                View Failed Build
+                            </a>
+                        </div>
+
+                    </div>
+
+                    <div style="
+                        padding: 15px;
+                        text-align: center;
+                        color: #64748b;
+                        font-size: 12px;
+                    ">
+                        EnderDoes CI/CD • Jenkins
+                    </div>
+
+                </div>
             """
+            )
         }
     }
 }
