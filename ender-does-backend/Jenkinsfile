@@ -4,7 +4,7 @@ pipeline {
     }
 
     environment {
-        PROJECT_NAME = 'ender-does'
+        PROJECT_NAME = 'ender-does-backend'
         DB_NAME     = 'enderdoes'
         DB_APP_USER = 'enderdoes_app'
 
@@ -229,7 +229,7 @@ EOF
                 ssh -i "$SSH_KEY" \
                     -o StrictHostKeyChecking=no \
                     "$SSH_USER@${DEPLOY_HOST}" \
-                    "sudo -n /usr/local/bin/deploy-subdomain enderdoes 8081"
+                    "sudo -n /usr/local/bin/deploy-subdomain api enderdoes 8081"
             '''
                 }
             }
