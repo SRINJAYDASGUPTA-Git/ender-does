@@ -189,7 +189,7 @@ pipeline {
                             <tr>
                                 <td style="padding: 10px; font-weight: bold;">Docker Image</td>
                                 <td style="padding: 10px;">
-                                    ${DOCKER_IMAGE}:${IMAGE_TAG}
+                                    ${IMAGE_NAME}:${BUILD_NUMBER}
                                 </td>
                             </tr>
 
