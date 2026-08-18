@@ -324,7 +324,7 @@ export default function Home() {
               <Button
                   variant="outline"
                   className="w-full justify-start gap-3"
-                  onClick={() => router.push("/todos/active")}
+                  onClick={() => router.push("/todos?view=active")}
               >
                 <Circle className="size-4" />
                 View active tasks
@@ -333,7 +333,7 @@ export default function Home() {
               <Button
                   variant="outline"
                   className="w-full justify-start gap-3"
-                  onClick={() => router.push("/todos/completed")}
+                  onClick={() => router.push("/todos?view=completed")}
               >
                 <CheckCircle2 className="size-4" />
                 View completed tasks

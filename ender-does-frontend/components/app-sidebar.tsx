@@ -13,6 +13,7 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
     SidebarRail,
+    SidebarTrigger,
 } from "@/components/ui/sidebar"
 import {useUser} from "@/providers/UserContext";
 import {useRouter} from "next/navigation";
