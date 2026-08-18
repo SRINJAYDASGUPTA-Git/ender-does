@@ -112,19 +112,6 @@ pipeline {
                         docker logs "$TEST_CONTAINER_NAME" || true
                     '''
                 }
-
-                always {
-                    sh '''
-                        if docker ps -a \
-                            --format '{{.Names}}' \
-                            | grep -qx "$TEST_CONTAINER_NAME"; then
-
-                            echo "Removing E2E container..."
-
-                            docker rm -f "$TEST_CONTAINER_NAME" || true
-                        fi
-                    '''
-                }
             }
         }
 
