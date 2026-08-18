@@ -40,7 +40,7 @@ pipeline {
             steps {
                 dir("ender-does-frontend") {
                     sh """
-                        docker buildx build \
+                        docker build \
                             -t ${IMAGE_NAME}:${BUILD_NUMBER} \
                             -t ${IMAGE_NAME}:latest \
                             .
@@ -140,6 +140,12 @@ pipeline {
                     -o StrictHostKeyChecking=no \
                     "$SSH_USER@${DEPLOY_HOST}" \
                     "sudo -n /usr/local/bin/deploy-subdomain frontend enderdoes 3000"
+
+
+                ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@${DEPLOY_HOST}" \
+                            "docker image prune -f"
             '''
                 }
             }
