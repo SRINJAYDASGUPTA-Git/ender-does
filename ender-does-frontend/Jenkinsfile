@@ -99,6 +99,14 @@ pipeline {
                             "$IMAGE_NAME:$BUILD_NUMBER"
 
                         echo "E2E container started."
+
+                        if curl -fsS \
+                            "http://host.docker.internal:3001/login" \
+                            > /dev/null; then
+
+                            echo "E2E frontend is ready."
+                            exit 0
+                        fi
                     '''
                 }
             }
@@ -125,7 +133,7 @@ pipeline {
                     for i in $(seq 1 30); do
 
                         if curl -fsS \
-                            "$E2E_BASE_URL/login" \
+                            "http://host.docker.internal:3001/login" \
                             > /dev/null; then
 
                             echo "E2E frontend is ready."
