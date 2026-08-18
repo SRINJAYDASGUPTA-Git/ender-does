@@ -89,7 +89,7 @@ pipeline {
 
                         docker run -d \
                             --name "$TEST_CONTAINER_NAME" \
-                            -p "$TEST_HOST_PORT:$CONTAINER_PORT" \
+                            -p "3000:$CONTAINER_PORT" \
                             -e NODE_ENV=production \
                             -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
                             -e TEST_USER_EMAIL=e2e@enderdoes.local \
@@ -101,7 +101,7 @@ pipeline {
                         echo "E2E container started."
 
                         if curl -fsS \
-                            "http://host.docker.internal:3001/login" \
+                            "http://host.docker.internal:3000/login" \
                             > /dev/null; then
 
                             echo "E2E frontend is ready."
