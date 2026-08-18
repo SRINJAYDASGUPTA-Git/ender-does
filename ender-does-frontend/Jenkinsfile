@@ -1,15 +1,27 @@
 pipeline {
+
     agent {
         label 'node-agent'
     }
 
     environment {
         PROJECT_NAME = 'enderdoes-frontend'
+
         IMAGE_NAME = "srinjay2004/ender-does-frontend"
+
+        // Production
         CONTAINER_NAME = "ender-does-frontend"
         CONTAINER_PORT = "3000"
         HOST_PORT = "3000"
-        DEPLOY_HOST  = '172.17.0.1'
+
+        // Temporary E2E deployment
+        TEST_CONTAINER_NAME = "ender-does-frontend-test"
+        TEST_HOST_PORT = "3001"
+
+        DEPLOY_HOST = '172.17.0.1'
+
+        // E2E target
+        E2E_BASE_URL = "http://host.docker.internal:3001"
     }
 
     stages {
@@ -49,32 +61,16 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([
-                        usernamePassword(
-                            credentialsId: 'dockerhub-credentials',
-                            usernameVariable: 'DOCKER_USER',
-                            passwordVariable: 'DOCKER_PASSWORD'
-                        )
-                    ]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login \
-                            -u "$DOCKER_USER" \
-                            --password-stdin
+        /*
+         * ---------------------------------------------------------
+         * E2E TEST DEPLOYMENT
+         * ---------------------------------------------------------
+         */
 
-                        docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-                        docker push ${IMAGE_NAME}:latest
-
-                        docker logout
-                    '''
-                }
-            }
-        }
-
-        stage("Deploy Container") {
+        stage("Start E2E Container") {
 
             steps {
+
                 withCredentials([
                         string(
                             credentialsId: 'imgbb-api-key',
@@ -83,49 +79,275 @@ pipeline {
                         string(
                             credentialsId: 'enderdoes-test-user-password',
                             variable: 'TEST_USER_PASSWORD'
-                        ),
+                        )
+                    ]) {
 
-                    ]){
                     sh '''
-                docker rm -f "$CONTAINER_NAME" || true
+                        echo "Starting E2E test container..."
 
-                docker run -d \
-                    --name "$CONTAINER_NAME" \
-                    -p "$HOST_PORT:$CONTAINER_PORT" \
-                    -e NODE_ENV=production \
-                    -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
-                    -e TEST_USER_EMAIL=e2e@enderdoes.local \
-                    -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
-                    -e IMGBB_API_KEY="$IMGBB_API_KEY" \
-                    -e COOKIE_SECURE=false \
-                    "$IMAGE_NAME:$BUILD_NUMBER"
-            '''
+                        docker rm -f "$TEST_CONTAINER_NAME" || true
+
+                        docker run -d \
+                            --name "$TEST_CONTAINER_NAME" \
+                            -p "$TEST_HOST_PORT:$CONTAINER_PORT" \
+                            -e NODE_ENV=production \
+                            -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
+                            -e TEST_USER_EMAIL=e2e@enderdoes.local \
+                            -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
+                            -e IMGBB_API_KEY="$IMGBB_API_KEY" \
+                            -e COOKIE_SECURE=false \
+                            "$IMAGE_NAME:$BUILD_NUMBER"
+
+                        echo "E2E container started."
+                    '''
+                }
+            }
+
+            post {
+
+                failure {
+                    sh '''
+                        echo "E2E container failed to start."
+
+                        docker logs "$TEST_CONTAINER_NAME" || true
+                    '''
+                }
+
+                always {
+                    sh '''
+                        if docker ps -a \
+                            --format '{{.Names}}' \
+                            | grep -qx "$TEST_CONTAINER_NAME"; then
+
+                            echo "Removing E2E container..."
+
+                            docker rm -f "$TEST_CONTAINER_NAME" || true
+                        fi
+                    '''
+                }
+            }
+        }
+
+        stage("Verify E2E Container") {
+
+            steps {
+
+                sh '''
+                    echo "Waiting for E2E frontend..."
+
+                    for i in $(seq 1 30); do
+
+                        if curl -fsS \
+                            "$E2E_BASE_URL/login" \
+                            > /dev/null; then
+
+                            echo "E2E frontend is ready."
+                            exit 0
+                        fi
+
+                        echo "Attempt $i/30: frontend not ready yet."
+
+                        sleep 2
+                    done
+
+                    echo "E2E frontend failed to start."
+
+                    docker logs "$TEST_CONTAINER_NAME" || true
+
+                    exit 1
+                '''
+            }
+
+            post {
+
+                failure {
+                    sh '''
+                        echo "E2E container logs:"
+
+                        docker logs "$TEST_CONTAINER_NAME" || true
+                    '''
+                }
+            }
+        }
+
+        stage("Run E2E Tests") {
+
+            steps {
+
+                dir("ender-does-frontend") {
+
+                    withCredentials([
+                            string(
+                                credentialsId: 'enderdoes-test-user-password',
+                                variable: 'TEST_USER_PASSWORD'
+                            )
+                        ]) {
+
+                        sh '''
+                            echo "Running Cucumber + Playwright E2E tests..."
+
+                            export BASE_URL="$E2E_BASE_URL"
+                            export TEST_USER_EMAIL="e2e@enderdoes.local"
+
+                            npx cucumber-js
+                        '''
+                    }
+                }
+            }
+
+            post {
+
+                failure {
+                    sh '''
+                        echo "E2E tests failed."
+
+                        echo "E2E container logs:"
+                        docker logs "$TEST_CONTAINER_NAME" || true
+                    '''
+                }
+
+                always {
+                    sh '''
+                        echo "Cleaning up E2E container..."
+
+                        docker rm -f "$TEST_CONTAINER_NAME" || true
+                    '''
+                }
+            }
+        }
+
+        /*
+         * ---------------------------------------------------------
+         * DOCKER HUB
+         * ---------------------------------------------------------
+         *
+         * Image is pushed only after E2E tests pass.
+         */
+
+        stage("Push Docker Image") {
+
+            steps {
+
+                withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-credentials',
+                            usernameVariable: 'DOCKER_USER',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )
+                    ]) {
+
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                            -u "$DOCKER_USER" \
+                            --password-stdin
+
+                        docker push "$IMAGE_NAME:$BUILD_NUMBER"
+
+                        docker push "$IMAGE_NAME:latest"
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        /*
+         * ---------------------------------------------------------
+         * PRODUCTION DEPLOYMENT
+         * ---------------------------------------------------------
+         *
+         * This stage cannot execute if E2E tests fail.
+         */
+
+        stage("Deploy Container") {
+
+            steps {
+
+                withCredentials([
+                        string(
+                            credentialsId: 'imgbb-api-key',
+                            variable: 'IMGBB_API_KEY'
+                        ),
+                        string(
+                            credentialsId: 'enderdoes-test-user-password',
+                            variable: 'TEST_USER_PASSWORD'
+                        )
+                    ]) {
+
+                    sh '''
+                        echo "Deploying production frontend..."
+
+                        docker rm -f "$CONTAINER_NAME" || true
+
+                        docker run -d \
+                            --name "$CONTAINER_NAME" \
+                            -p "$HOST_PORT:$CONTAINER_PORT" \
+                            -e NODE_ENV=production \
+                            -e BACKEND_URL=https://api-enderdoes.srinjaydg.in \
+                            -e TEST_USER_EMAIL=e2e@enderdoes.local \
+                            -e TEST_USER_PASSWORD="$TEST_USER_PASSWORD" \
+                            -e IMGBB_API_KEY="$IMGBB_API_KEY" \
+                            -e COOKIE_SECURE=false \
+                            "$IMAGE_NAME:$BUILD_NUMBER"
+
+                        echo "Production container started."
+                    '''
+                }
+            }
+
+            post {
+
+                failure {
+                    sh '''
+                        echo "Production deployment failed."
+
+                        docker logs "$CONTAINER_NAME" || true
+                    '''
                 }
             }
         }
 
         stage("Verify Deployment") {
+
             steps {
+
                 sh '''
-                    echo "Waiting for frontend..."
+                    echo "Waiting for production frontend..."
 
                     for i in $(seq 1 30); do
-                        if curl -fsS http://host.docker.internal:3000/login > /dev/null; then
+
+                        if curl -fsS \
+                            http://host.docker.internal:3000/login \
+                            > /dev/null; then
+
                             echo "Frontend is running."
                             exit 0
                         fi
+
+                        echo "Attempt $i/30: production frontend not ready."
 
                         sleep 2
                     done
 
                     echo "Frontend failed to start."
-                    docker logs ${CONTAINER_NAME}
+
+                    docker logs "$CONTAINER_NAME" || true
+
                     exit 1
                 '''
             }
         }
-        stage('Configure Subdomain') {
+
+        /*
+         * ---------------------------------------------------------
+         * CLOUDFLARE
+         * ---------------------------------------------------------
+         */
+
+        stage("Configure Subdomain") {
+
             steps {
+
                 withCredentials([
                         sshUserPrivateKey(
                             credentialsId: 'deployment-user-ssh-creds',
@@ -133,190 +355,350 @@ pipeline {
                             usernameVariable: 'SSH_USER'
                         )
                     ]) {
+
                     sh '''
-                set +x
+                        set +x
 
-                ssh -i "$SSH_KEY" \
-                    -o StrictHostKeyChecking=no \
-                    "$SSH_USER@${DEPLOY_HOST}" \
-                    "sudo -n /usr/local/bin/deploy-subdomain frontend enderdoes 3000"
+                        echo "Configuring frontend subdomain..."
 
+                        ssh -i "$SSH_KEY" \
+                            -o StrictHostKeyChecking=no \
+                            "$SSH_USER@${DEPLOY_HOST}" \
+                            "sudo -n /usr/local/bin/deploy-subdomain frontend enderdoes 3000"
 
-                ssh -i "$SSH_KEY" \
+                        echo "Cleaning unused Docker images..."
+
+                        ssh -i "$SSH_KEY" \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@${DEPLOY_HOST}" \
                             "docker image prune -f"
-            '''
+                    '''
                 }
             }
         }
     }
 
+    /*
+     * -------------------------------------------------------------
+     * PIPELINE EMAILS
+     * -------------------------------------------------------------
+     */
+
     post {
+
         success {
+
             echo "Deployment successful: ${IMAGE_NAME}:${BUILD_NUMBER}"
 
             emailext(
                 to: 'dasguptasrinjay2004@gmail.com',
-                subject: "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
+
+                subject:
+                "🚀 Deployment Successful — ${PROJECT_NAME} #${BUILD_NUMBER}",
+
                 mimeType: 'text/html',
+
+                attachmentsPattern:
+                '**/reports/cucumber-report-*.pdf',
+
                 body: """
-                <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
-
                     <div style="
-                        background: linear-gradient(135deg, #0f172a, #1e3a8a);
-                        color: white;
-                        padding: 30px;
-                        border-radius: 12px 12px 0 0;
+                        font-family: Arial, sans-serif;
+                        max-width: 700px;
+                        margin: auto;
                     ">
-                        <h1>🚀 Deployment Successful</h1>
-                        <p>${PROJECT_NAME} has been deployed successfully.</p>
-                    </div>
-
-                    <div style="
-                        background: #f8fafc;
-                        padding: 25px;
-                        border: 1px solid #e2e8f0;
-                    ">
-
-                        <h2>Build Information</h2>
-
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 10px; font-weight: bold;">Project</td>
-                                <td style="padding: 10px;">${PROJECT_NAME}</td>
-                            </tr>
-
-                            <tr>
-                                <td style="padding: 10px; font-weight: bold;">Build</td>
-                                <td style="padding: 10px;">#${BUILD_NUMBER}</td>
-                            </tr>
-
-                            <tr>
-                                <td style="padding: 10px; font-weight: bold;">Docker Image</td>
-                                <td style="padding: 10px;">
-                                    ${IMAGE_NAME}:${BUILD_NUMBER}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td style="padding: 10px; font-weight: bold;">Branch</td>
-                                <td style="padding: 10px;">
-                                    ${env.BRANCH_NAME}
-                                </td>
-                            </tr>
-                        </table>
 
                         <div style="
-                            margin-top: 25px;
-                            padding: 15px;
-                            background: #dcfce7;
-                            border-radius: 8px;
-                            color: #166534;
+                            background: linear-gradient(
+                                135deg,
+                                #0f172a,
+                                #1e3a8a
+                            );
+                            color: white;
+                            padding: 30px;
+                            border-radius: 12px 12px 0 0;
                         ">
-                            <strong>✓ Production deployment completed successfully.</strong>
+
+                            <h1>🚀 Deployment Successful</h1>
+
+                            <p>
+                                ${PROJECT_NAME}
+                                has been deployed successfully.
+                            </p>
+
                         </div>
 
-                        <div style="margin-top: 25px;">
-                            <a href="${BUILD_URL}"
-                               style="
-                                   display: inline-block;
-                                   padding: 12px 20px;
-                                   background: #2563eb;
-                                   color: white;
-                                   text-decoration: none;
-                                   border-radius: 6px;
-                               ">
-                                View Jenkins Build
-                            </a>
+                        <div style="
+                            background: #f8fafc;
+                            padding: 25px;
+                            border: 1px solid #e2e8f0;
+                        ">
+
+                            <h2>Build Information</h2>
+
+                            <table style="
+                                width: 100%;
+                                border-collapse: collapse;
+                            ">
+
+                                <tr>
+                                    <td style="
+                                        padding: 10px;
+                                        font-weight: bold;
+                                    ">
+                                        Project
+                                    </td>
+
+                                    <td style="padding: 10px;">
+                                        ${PROJECT_NAME}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="
+                                        padding: 10px;
+                                        font-weight: bold;
+                                    ">
+                                        Build
+                                    </td>
+
+                                    <td style="padding: 10px;">
+                                        #${BUILD_NUMBER}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="
+                                        padding: 10px;
+                                        font-weight: bold;
+                                    ">
+                                        Docker Image
+                                    </td>
+
+                                    <td style="padding: 10px;">
+                                        ${IMAGE_NAME}:${BUILD_NUMBER}
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td style="
+                                        padding: 10px;
+                                        font-weight: bold;
+                                    ">
+                                        Branch
+                                    </td>
+
+                                    <td style="padding: 10px;">
+                                        ${env.BRANCH_NAME}
+                                    </td>
+                                </tr>
+
+                            </table>
+
+                            <div style="
+                                margin-top: 25px;
+                                padding: 15px;
+                                background: #dcfce7;
+                                border-radius: 8px;
+                                color: #166534;
+                            ">
+
+                                <strong>
+                                    ✓ E2E tests passed and production
+                                    deployment completed successfully.
+                                </strong>
+
+                            </div>
+
+                            <div style="
+                                margin-top: 15px;
+                                padding: 15px;
+                                background: #eff6ff;
+                                border-radius: 8px;
+                                color: #1e40af;
+                            ">
+
+                                <strong>
+                                    📎 Cucumber E2E report attached.
+                                </strong>
+
+                            </div>
+
+                            <div style="margin-top: 25px;">
+
+                                <a href="${BUILD_URL}"
+                                   style="
+                                       display: inline-block;
+                                       padding: 12px 20px;
+                                       background: #2563eb;
+                                       color: white;
+                                       text-decoration: none;
+                                       border-radius: 6px;
+                                   ">
+
+                                    View Jenkins Build
+
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                        <div style="
+                            padding: 15px;
+                            text-align: center;
+                            color: #64748b;
+                            font-size: 12px;
+                        ">
+
+                            EnderDoes CI/CD • Jenkins
+
                         </div>
 
                     </div>
-
-                    <div style="
-                        padding: 15px;
-                        text-align: center;
-                        color: #64748b;
-                        font-size: 12px;
-                    ">
-                        EnderDoes CI/CD • Jenkins
-                    </div>
-
-                </div>
-            """
+                """
             )
         }
 
         failure {
+
             echo "Pipeline failed."
 
             emailext(
                 to: 'dasguptasrinjay2004@gmail.com',
-                subject: "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
+
+                subject:
+                "❌ Deployment Failed — ${PROJECT_NAME} #${BUILD_NUMBER}",
+
                 mimeType: 'text/html',
+
+                attachmentsPattern:
+                '**/reports/cucumber-report-*.pdf',
+
                 body: """
-                <div style="font-family: Arial, sans-serif; max-width: 700px; margin: auto;">
-
                     <div style="
-                        background: linear-gradient(135deg, #450a0a, #991b1b);
-                        color: white;
-                        padding: 30px;
-                        border-radius: 12px 12px 0 0;
+                        font-family: Arial, sans-serif;
+                        max-width: 700px;
+                        margin: auto;
                     ">
-                        <h1>❌ Deployment Failed</h1>
-                        <p>${PROJECT_NAME} deployment failed.</p>
-                    </div>
-
-                    <div style="
-                        background: #f8fafc;
-                        padding: 25px;
-                    ">
-
-                        <h2>Build Information</h2>
-
-                        <p><strong>Project:</strong> ${PROJECT_NAME}</p>
-                        <p><strong>Build:</strong> #${BUILD_NUMBER}</p>
-                        <p><strong>Branch:</strong> ${env.BRANCH_NAME}</p>
 
                         <div style="
-                            margin-top: 25px;
-                            padding: 15px;
-                            background: #fee2e2;
-                            border-radius: 8px;
-                            color: #991b1b;
+                            background: linear-gradient(
+                                135deg,
+                                #450a0a,
+                                #991b1b
+                            );
+                            color: white;
+                            padding: 30px;
+                            border-radius: 12px 12px 0 0;
                         ">
-                            <strong>✗ The pipeline failed.</strong>
-                            <br>
-                            Check the Jenkins console output for details.
+
+                            <h1>❌ Deployment Failed</h1>
+
+                            <p>
+                                ${PROJECT_NAME}
+                                deployment failed.
+                            </p>
+
                         </div>
 
-                        <div style="margin-top: 25px;">
-                            <a href="${BUILD_URL}"
-                               style="
-                                   display: inline-block;
-                                   padding: 12px 20px;
-                                   background: #dc2626;
-                                   color: white;
-                                   text-decoration: none;
-                                   border-radius: 6px;
-                               ">
-                                View Failed Build
-                            </a>
+                        <div style="
+                            background: #f8fafc;
+                            padding: 25px;
+                        ">
+
+                            <h2>Build Information</h2>
+
+                            <p>
+                                <strong>Project:</strong>
+                                ${PROJECT_NAME}
+                            </p>
+
+                            <p>
+                                <strong>Build:</strong>
+                                #${BUILD_NUMBER}
+                            </p>
+
+                            <p>
+                                <strong>Branch:</strong>
+                                ${env.BRANCH_NAME}
+                            </p>
+
+                            <p>
+                                <strong>Docker Image:</strong>
+                                ${IMAGE_NAME}:${BUILD_NUMBER}
+                            </p>
+
+                            <div style="
+                                margin-top: 25px;
+                                padding: 15px;
+                                background: #fee2e2;
+                                border-radius: 8px;
+                                color: #991b1b;
+                            ">
+
+                                <strong>
+                                    ✗ The pipeline failed.
+                                </strong>
+
+                                <br><br>
+
+                                The production deployment was
+                                stopped if the failure occurred
+                                before deployment.
+
+                            </div>
+
+                            <div style="
+                                margin-top: 15px;
+                                padding: 15px;
+                                background: #eff6ff;
+                                border-radius: 8px;
+                                color: #1e40af;
+                            ">
+
+                                <strong>
+                                    📎 Cucumber E2E report is attached
+                                    when available.
+                                </strong>
+
+                            </div>
+
+                            <div style="
+                                margin-top: 25px;
+                            ">
+
+                                <a href="${BUILD_URL}"
+                                   style="
+                                       display: inline-block;
+                                       padding: 12px 20px;
+                                       background: #dc2626;
+                                       color: white;
+                                       text-decoration: none;
+                                       border-radius: 6px;
+                                   ">
+
+                                    View Failed Build
+
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                        <div style="
+                            padding: 15px;
+                            text-align: center;
+                            color: #64748b;
+                            font-size: 12px;
+                        ">
+
+                            EnderDoes CI/CD • Jenkins
+
                         </div>
 
                     </div>
-
-                    <div style="
-                        padding: 15px;
-                        text-align: center;
-                        color: #64748b;
-                        font-size: 12px;
-                    ">
-                        EnderDoes CI/CD • Jenkins
-                    </div>
-
-                </div>
-            """
+                """
             )
         }
     }

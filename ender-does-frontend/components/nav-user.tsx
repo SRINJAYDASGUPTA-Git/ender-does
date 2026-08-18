@@ -133,13 +133,6 @@ export function NavUser({user}: { user: UserResponse }) {
 
               <DropdownMenuGroup>
                 <DropdownMenuItem
-                    onClick={() => router.push("/profile")}
-                >
-                  <UserIcon />
-                  Profile
-                </DropdownMenuItem>
-
-                <DropdownMenuItem
                     onClick={() => router.push("/settings")}
                 >
                   <SettingsIcon />
