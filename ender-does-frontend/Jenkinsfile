@@ -154,7 +154,7 @@ pipeline {
 
     post {
         success {
-            echo "Deployment successful: ${DOCKER_IMAGE}:${IMAGE_TAG}"
+            echo "Deployment successful: ${IMAGE_NAME}:${BUILD_NUMBER}"
 
             emailext(
                 to: 'dasguptasrinjay2004@gmail.com',
