@@ -389,7 +389,7 @@ pipeline {
                 mimeType: 'text/html',
 
                 attachmentsPattern:
-                '**/reports/cucumber-report-*.pdf',
+                '**/reports/cucumber/cucumber-report-*.html',
 
                 body: """
                     <div style="
