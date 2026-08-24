@@ -176,6 +176,9 @@ pipeline {
                             export TEST_USER_EMAIL="e2e@enderdoes.local"
 
                             npx cucumber-js
+
+                            echo "Generated reports:"
+                            find reports -maxdepth 2 -type f -print || true
                         '''
                     }
                 }
