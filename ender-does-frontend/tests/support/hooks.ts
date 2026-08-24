@@ -1,15 +1,8 @@
-import {
-    Before,
-    BeforeAll,
-    After,
-    AfterAll,
-    setDefaultTimeout,
-} from "@cucumber/cucumber";
+import {After, AfterAll, Before, BeforeAll, setDefaultTimeout,} from "@cucumber/cucumber";
 
-import { chromium, Browser, Page } from "playwright";
-import { expect } from "@playwright/test";
+import {Browser, chromium, Page} from "playwright";
 
-import { CustomWorld } from "./world";
+import {CustomWorld} from "./world";
 
 const BASE_URL =
     process.env.BASE_URL ?? "http://localhost:3000";
@@ -133,9 +126,10 @@ AfterAll(async function () {
             error
         );
     } finally {
-        await context.close();
-        await browser.close();
-
+        if (context) {
+            await context.close();
+            await browser.close();
+        }
         console.log("🧹 Browser closed.");
     }
 });

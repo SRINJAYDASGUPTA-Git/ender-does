@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm ci
+RUN npx playwright install --with-deps chromium
 
 
 FROM node:22-alpine AS builder
@@ -29,7 +30,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-RUN npx playwright install
 
 EXPOSE 3000
 

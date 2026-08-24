@@ -21,7 +21,7 @@ pipeline {
         DEPLOY_HOST = '172.17.0.1'
 
         // E2E target
-        E2E_BASE_URL = "http://172.17.0.1:3001"
+        E2E_BASE_URL = "http://$CONTAINER_NAME:$CONTAINER_PORT"
     }
 
     stages {
@@ -36,6 +36,14 @@ pipeline {
             steps {
                 dir("ender-does-frontend") {
                     sh "npm ci"
+                }
+            }
+        }
+
+        stage("Install Playwright Browser") {
+            steps {
+                dir("ender-does-frontend") {
+                    sh "npx playwright install --with-deps chromium"
                 }
             }
         }
