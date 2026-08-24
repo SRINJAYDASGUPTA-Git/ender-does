@@ -177,8 +177,11 @@ pipeline {
 
                             npx cucumber-js
 
+                            echo "Generating PDF report..."
+                            node scripts/generate-cucumber-pdf.js
+
                             echo "Generated reports:"
-                            find reports -maxdepth 2 -type f -print || true
+                            find reports -maxdepth 2 -type f -print
                         '''
                     }
                 }
