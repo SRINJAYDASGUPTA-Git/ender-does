@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm ci
-RUN npx playwright install --with-deps chromium
+RUN npx playwright install chromium
 
 
 FROM node:22-alpine AS builder
