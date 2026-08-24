@@ -21,7 +21,7 @@ pipeline {
         DEPLOY_HOST = '172.17.0.1'
 
         // E2E target
-        E2E_BASE_URL = "http://host.docker.internal:3001"
+        E2E_BASE_URL = "http://172.17.0.1:3001"
     }
 
     stages {
@@ -124,13 +124,17 @@ pipeline {
 
                     for i in $(seq 1 5); do
 
-                        if curl -fsS \
-                            "http://host.docker.internal:$TEST_HOST_PORT/login" \
-                            > /dev/null; then
-
-                            echo "E2E frontend is ready."
-                            exit 0
-                        fi
+                        if curl \
+    --noproxy '*' \
+    --connect-timeout 2 \
+    --max-time 5 \
+    -fsS \
+    "$E2E_BASE_URL/login" \
+    > /dev/null
+then
+    echo "E2E frontend is ready."
+    exit 0
+fi
 
                         echo "Attempt $i/5: frontend not ready yet."
 
