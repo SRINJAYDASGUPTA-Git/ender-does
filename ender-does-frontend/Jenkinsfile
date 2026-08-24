@@ -130,7 +130,7 @@ pipeline {
                 sh '''
                     echo "Waiting for E2E frontend..."
 
-                    for i in $(seq 1 30); do
+                    for i in $(seq 1 5); do
 
                         if curl -fsS \
                             "http://host.docker.internal:3001/login" \
@@ -140,7 +140,7 @@ pipeline {
                             exit 0
                         fi
 
-                        echo "Attempt $i/30: frontend not ready yet."
+                        echo "Attempt $i/5: frontend not ready yet."
 
                         sleep 2
                     done
