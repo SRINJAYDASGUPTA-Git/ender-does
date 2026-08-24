@@ -21,7 +21,7 @@ pipeline {
         DEPLOY_HOST = '172.17.0.1'
 
         // E2E target
-        E2E_BASE_URL = "http://$CONTAINER_NAME:$CONTAINER_PORT"
+        E2E_BASE_URL = "http://$TEST_CONTAINER_NAME:$CONTAINER_PORT"
     }
 
     stages {
