@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Exceptions\" />
     <Folder Include="Todo\Repositories\" />
     <Folder Include="User\Repositories\" />
   </ItemGroup>

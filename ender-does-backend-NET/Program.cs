@@ -8,6 +8,7 @@ using ender_does_backend_NET.User.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
+using ender_does_backend_NET.Exceptions;
 using ender_does_backend_NET.User.Services;
 using ender_does_backend_NET.User.Services.impl;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -36,6 +37,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -61,6 +63,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddProblemDetails();
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition(
@@ -101,6 +104,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseExceptionHandler();
 
 app.MapControllers();
 

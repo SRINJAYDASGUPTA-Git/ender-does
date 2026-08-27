@@ -4,7 +4,7 @@ using ender_does_backend_NET.Data;
 using ender_does_backend_NET.User.Mappers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
+using ender_does_backend_NET.Exceptions;
 namespace ender_does_backend_NET.Auth.Services.impl;
 
 public class AuthService : IAuthService
@@ -32,8 +32,9 @@ public class AuthService : IAuthService
 
         if (emailExists)
         {
-            throw new InvalidOperationException(
-                "A user with this email already exists."
+            throw new Exceptions.ApplicationException(
+                "A user with this email already exists.",
+                StatusCodes.Status409Conflict
             );
         }
 

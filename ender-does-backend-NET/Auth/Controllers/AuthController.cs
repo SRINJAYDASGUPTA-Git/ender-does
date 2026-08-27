@@ -19,19 +19,9 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Register(
         RegisterRequest request)
     {
-        try
-        {
-            var response = await _authService.RegisterAsync(request);
+        var response = await _authService.RegisterAsync(request);
 
-            return Created("", response);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new
-            {
-                message = ex.Message
-            });
-        }
+        return Created("", response);
     }
 
     [HttpPost("login")]
