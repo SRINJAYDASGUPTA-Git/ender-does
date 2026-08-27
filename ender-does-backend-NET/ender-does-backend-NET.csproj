@@ -1,10 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>ender_does_backend_NET</RootNamespace>
+    <UserSecretsId>f9a3688f-7260-45a4-bb3b-0bc713772c91</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
