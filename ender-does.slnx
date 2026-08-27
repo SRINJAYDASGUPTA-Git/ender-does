@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ender-does-backend-NET.Tests/ender-does-backend-NET.Tests.csproj" />
+  <Project Path="ender-does-backend-NET/ender-does-backend-NET.csproj" />
+</Solution>
