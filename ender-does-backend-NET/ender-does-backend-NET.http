@@ -1,0 +1,6 @@
+@ender_does_backend_NET_HostAddress = http://localhost:5117
+
+GET {{ender_does_backend_NET_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
