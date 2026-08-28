@@ -7,27 +7,17 @@ using Microsoft.EntityFrameworkCore;
 using ender_does_backend_NET.Exceptions;
 namespace ender_does_backend_NET.Auth.Services.impl;
 
-public class AuthService : IAuthService
+public class AuthService(
+    ApplicationDbContext context,
+    IPasswordHasher<User.Models.User> passwordHasher,
+    IJwtService jwtService)
+    : IAuthService
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IPasswordHasher<User.Models.User> _passwordHasher;
-    private readonly JwtService _jwtService;
-
-    public AuthService(
-        ApplicationDbContext context,
-        IPasswordHasher<User.Models.User> passwordHasher,
-        JwtService jwtService)
-    {
-        _context = context;
-        _passwordHasher = passwordHasher;
-        _jwtService = jwtService;
-    }
-
     // methods...
     public async Task<AuthResponse> RegisterAsync(
         RegisterRequest request)
     {
-        var emailExists = await _context.Users
+        var emailExists = await context.Users
             .AnyAsync(u => u.Email == request.Email);
 
         if (emailExists)
@@ -48,16 +38,16 @@ public class AuthService : IAuthService
             Enabled = true
         };
 
-        user.PasswordHash = _passwordHasher.HashPassword(
+        user.PasswordHash = passwordHasher.HashPassword(
             user,
             request.Password
         );
 
-        _context.Users.Add(user);
+        context.Users.Add(user);
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
-        var token = _jwtService.GenerateToken(user);
+        var token = jwtService.GenerateToken(user);
 
         return new AuthResponse(
             token,
@@ -68,7 +58,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse?> LoginAsync(
         LoginRequest request)
     {
-        var user = await _context.Users
+        var user = await context.Users
             .Include(u => u.Todos)
             .FirstOrDefaultAsync(u => u.Email == request.Email);
 
@@ -78,7 +68,7 @@ public class AuthService : IAuthService
         if (!user.Enabled || user.AccountLocked)
             return null;
 
-        var result = _passwordHasher.VerifyHashedPassword(
+        var result = passwordHasher.VerifyHashedPassword(
             user,
             user.PasswordHash,
             request.Password
@@ -87,7 +77,7 @@ public class AuthService : IAuthService
         if (result == PasswordVerificationResult.Failed)
             return null;
 
-        var token = _jwtService.GenerateToken(user);
+        var token = jwtService.GenerateToken(user);
 
         return new AuthResponse(
             token,

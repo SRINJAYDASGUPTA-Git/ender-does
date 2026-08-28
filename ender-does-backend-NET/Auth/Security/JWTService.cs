@@ -6,7 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace ender_does_backend_NET.Auth.Security;
 
-public class JwtService(IOptions<JwtOptions> options)
+public class JwtService(IOptions<JwtOptions> options) : IJwtService
 {
     private readonly JwtOptions _options = options.Value;
 

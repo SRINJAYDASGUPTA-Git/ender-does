@@ -33,7 +33,7 @@ builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt")
 );
 builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
