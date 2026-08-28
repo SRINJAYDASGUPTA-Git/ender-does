@@ -19,10 +19,6 @@ public class CustomWebApplicationFactory
         IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.UseSetting(
-            "detailedErrors",
-            "true"
-        );
         _connection.Open();
         builder.ConfigureAppConfiguration((context, config) =>
         {
