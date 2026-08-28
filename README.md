@@ -393,7 +393,9 @@ The Java backend remains the currently deployed implementation, while the .NET b
 
 ## License
 
-MIT License.
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 <div align="center">
 
