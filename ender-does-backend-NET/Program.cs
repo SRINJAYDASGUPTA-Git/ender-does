@@ -16,13 +16,24 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
-
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.WebHost.UseSetting(
+        "detailedErrors",
+        "true"
+    );
+}
 // Add services to the container.
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    )
-);
+if (!builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(
+            builder.Configuration.GetConnectionString(
+                "DefaultConnection"
+            )
+        )
+    );
+}
 builder.Services.AddScoped<ITodoService, TodoService>();
 
 builder.Services.AddControllers();
@@ -109,3 +120,4 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+public partial class Program { }
