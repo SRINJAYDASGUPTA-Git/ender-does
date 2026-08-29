@@ -32,7 +32,7 @@ pipeline {
             post {
                 always {
                     junit(
-                        testResults: 'target/surefire-reports/TEST-*.xml',
+                        testResults: 'ender-does-backend/target/surefire-reports/TEST-*.xml',
                         allowEmptyResults: false
                     )
                 }
