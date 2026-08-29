@@ -29,6 +29,14 @@ pipeline {
                     sh 'mvn -B clean test'
                 }
             }
+            post {
+                always {
+                    junit(
+                        testResults: 'target/surefire-reports/TEST-*.xml',
+                        allowEmptyResults: false
+                    )
+                }
+            }
         }
 
         stage('Package') {
@@ -74,26 +82,26 @@ pipeline {
                 }
             }
         }
-//        stage('Test Deployment SSH') {
-//            steps {
-//                withCredentials([
-//                        sshUserPrivateKey(
-//                            credentialsId: 'deployment-user-ssh-creds',
-//                            keyFileVariable: 'SSH_KEY',
-//                            usernameVariable: 'SSH_USER'
-//                        )
-//                    ]) {
-//                    sh '''
-//                        set -x
-//                        ssh -i "$SSH_KEY" \
-//                            -o StrictHostKeyChecking=no \
-//                            -o ConnectTimeout=5 \
-//                            "$SSH_USER@${DEPLOY_HOST}" \
-//                            "whoami && hostname"
-//                    '''
-//                }
-//            }
-//        }
+        //        stage('Test Deployment SSH') {
+        //            steps {
+        //                withCredentials([
+        //                        sshUserPrivateKey(
+        //                            credentialsId: 'deployment-user-ssh-creds',
+        //                            keyFileVariable: 'SSH_KEY',
+        //                            usernameVariable: 'SSH_USER'
+        //                        )
+        //                    ]) {
+        //                    sh '''
+        //                        set -x
+        //                        ssh -i "$SSH_KEY" \
+        //                            -o StrictHostKeyChecking=no \
+        //                            -o ConnectTimeout=5 \
+        //                            "$SSH_USER@${DEPLOY_HOST}" \
+        //                            "whoami && hostname"
+        //                    '''
+        //                }
+        //            }
+        //        }
 
         stage('Deploy') {
             steps {
